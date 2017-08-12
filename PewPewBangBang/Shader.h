@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <ctime>
 
 #include <glew\glew.h>	//include glew to get openGL headers
 
@@ -15,6 +16,7 @@ public:
 	GLuint Program;
 	//constructor reads and builds shader
 	Shader(const GLchar* vertexPath, const GLchar* fragmentPath);
+	Shader(const GLchar* vertexPath, const GLchar* fragmentPath, const GLchar* tessControlPath, const GLchar* tessEvalPath);
 	//use the program
 	void use();
 };

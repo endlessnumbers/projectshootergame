@@ -1,16 +1,16 @@
-﻿Build started 08/08/2017 12:52:34.
+﻿Build started 12/08/2017 14:56:18.
      1>Project "U:\Documents\3D Android Game\PewPewBangBang\PewPewBangBang\PewPewBangBang.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt Main.cpp
          Main.cpp
-     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(143): warning C4244: 'initializing' : conversion from 'double' to 'GLfloat', possible loss of data
-     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(224): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
-     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(225): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
-     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(229): warning C4244: 'initializing' : conversion from 'double' to 'GLfloat', possible loss of data
-     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(230): warning C4244: 'initializing' : conversion from 'double' to 'GLfloat', possible loss of data
-     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(232): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
-     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(233): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
-     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(240): warning C4244: 'argument' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(192): warning C4244: 'initializing' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(273): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(274): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(278): warning C4244: 'initializing' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(279): warning C4244: 'initializing' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(281): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(282): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(289): warning C4244: 'argument' : conversion from 'double' to 'GLfloat', possible loss of data
        Link:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"U:\Documents\3D Android Game\PewPewBangBang\Debug\PewPewBangBang.exe" /INCREMENTAL /NOLOGO glew32s.lib glfw3.lib opengl32.lib SOIL.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"U:\Documents\3D Android Game\PewPewBangBang\Debug\PewPewBangBang.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"U:\Documents\3D Android Game\PewPewBangBang\Debug\PewPewBangBang.lib" /MACHINE:X86 Debug\Main.obj
          Debug\Shader.obj
@@ -19,4 +19,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:05.17
+Time Elapsed 00:00:03.37

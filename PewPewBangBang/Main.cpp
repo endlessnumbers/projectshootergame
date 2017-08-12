@@ -33,7 +33,7 @@ int main()
 	// Init GLFW
 	glfwInit();
 	// Set all the required options for GLFW
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
@@ -62,7 +62,7 @@ int main()
 	glEnable(GL_DEPTH_TEST);
 
 	Shader lightShader("light.vs", "light.frag");
-	Shader lampShader("lamp.vs", "lamp.frag");
+	Shader lampShader("lamp.vs", "lamp.frag", "lamp.tc", "lamp.te");
 	camera.MouseSensitivity = 0.05f;
 
 	GLfloat vertices[] = {
@@ -124,15 +124,64 @@ int main()
 	glEnableVertexAttribArray(1);
 	glBindVertexArray(0);
 
-	GLuint lightVAO;
 
+	//Create star
+	const int starFaces[] = {
+		2, 1, 0,
+		3, 2, 0,
+		4, 3, 0,
+		5, 4, 0,
+		1, 5, 0,
+		11, 6, 7,
+		11, 7, 8,
+		11, 8, 9,
+		11, 9, 10,
+		11, 10, 6,
+		1, 2, 6,
+		2, 3, 7,
+		3, 4, 8,
+		4, 5, 9,
+		5, 1, 10,
+		2, 7, 6,
+		3, 8, 7,
+		4, 9, 8,
+		5, 10, 9,
+		1, 6, 10 };
+
+	const float starVerts[] = {
+		0.000f, 0.000f, 1.000f,
+		0.894f, 0.000f, 0.447f,
+		0.276f, 0.851f, 0.447f,
+		-0.724f, 0.526f, 0.447f,
+		-0.724f, -0.526f, 0.447f,
+		0.276f, -0.851f, 0.447f,
+		0.724f, 0.526f, -0.447f,
+		-0.276f, 0.851f, -0.447f,
+		-0.894f, 0.000f, -0.447f,
+		-0.276f, -0.851f, -0.447f,
+		0.724f, -0.526f, -0.447f,
+		0.000f, 0.000f, -1.000f };
+
+	int indexCount = sizeof(starFaces) / sizeof(starFaces[0]);
+
+	GLuint lightVAO;
 	glGenVertexArrays(1, &lightVAO);
 	glBindVertexArray(lightVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	//lamp - same shape as the other cube!
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GL_FLOAT), (GLvoid*)0);
-	glEnableVertexAttribArray(0);
-	glBindVertexArray(0);
+
+	//create VBO for positions
+	GLuint starVBO;
+	GLsizei stride = 3 * sizeof(float);
+	glGenBuffers(1, &starVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, starVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(starVerts), starVerts, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+
+	//VBO for indices
+	GLuint indices;
+	glGenBuffers(1, &indices);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(starFaces), starFaces, GL_STATIC_DRAW);
 
 	//game loop
 	while (!glfwWindowShouldClose(window))
@@ -193,7 +242,8 @@ int main()
 
 		//draw light object
 		glBindVertexArray(lightVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glPatchParameteri();
+		glDrawArrays(GL_TRIANGLES, 0, 12);
 		glBindVertexArray(0);
 
 		glfwSwapBuffers(window);

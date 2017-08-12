@@ -7,6 +7,7 @@
 #include "Camera.h"
 #include "Shader.h"
 #include <iostream>
+#include <fstream>
 
 // Function prototypes
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
@@ -60,6 +61,9 @@ int main()
 
 	//enable depth testing
 	glEnable(GL_DEPTH_TEST);
+	
+	//DEBUG - enable debugging
+	glEnable(GL_DEBUG_OUTPUT);
 
 	Shader lightShader("light.vs", "light.frag");
 	Shader lampShader("lamp.vs", "lamp.frag", "lamp.tc", "lamp.te");
@@ -109,11 +113,15 @@ int main()
 		-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f
 	};
 
+	//open log file for debugging output
+	std::ofstream logFile;
+	logFile.open("log.txt", std::ofstream::app);
+
 	GLuint VBO, containerVAO;
 	glGenVertexArrays(1, &containerVAO);
-	glGenBuffers(1, &VBO);
-
 	glBindVertexArray(containerVAO);
+
+	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 	//position attributes of cube
@@ -124,9 +132,8 @@ int main()
 	glEnableVertexAttribArray(1);
 	glBindVertexArray(0);
 
-
 	//Create star
-	const int starFaces[] = {
+	const GLint starFaces[] = {
 		2, 1, 0,
 		3, 2, 0,
 		4, 3, 0,
@@ -146,9 +153,10 @@ int main()
 		3, 8, 7,
 		4, 9, 8,
 		5, 10, 9,
-		1, 6, 10 };
+		1, 6, 10 
+	};
 
-	const float starVerts[] = {
+	const GLfloat starVerts[] = {
 		0.000f, 0.000f, 1.000f,
 		0.894f, 0.000f, 0.447f,
 		0.276f, 0.851f, 0.447f,
@@ -160,28 +168,32 @@ int main()
 		-0.894f, 0.000f, -0.447f,
 		-0.276f, -0.851f, -0.447f,
 		0.724f, -0.526f, -0.447f,
-		0.000f, 0.000f, -1.000f };
+		0.000f, 0.000f, -1.000f 
+	};
 
 	int indexCount = sizeof(starFaces) / sizeof(starFaces[0]);
 
 	GLuint lightVAO;
 	glGenVertexArrays(1, &lightVAO);
 	glBindVertexArray(lightVAO);
+	logFile << "LIGHT_VAO: " << glGetError() << std::endl;
 
 	//create VBO for positions
 	GLuint starVBO;
-	GLsizei stride = 3 * sizeof(float);
 	glGenBuffers(1, &starVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, starVBO);
+	logFile << "LIGHT_VBO_BIND: " << glGetError() << std::endl;
 	glBufferData(GL_ARRAY_BUFFER, sizeof(starVerts), starVerts, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+	logFile << "LIGHT_VBO_BUFFER_DATA: " << glGetError() << std::endl;
 
 	//VBO for indices
 	GLuint indices;
 	glGenBuffers(1, &indices);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(starFaces), starFaces, GL_STATIC_DRAW);
+	logFile << "INDICES_BUFFER_DATA: " << glGetError() << std::endl;
 
 	//game loop
 	while (!glfwWindowShouldClose(window))
@@ -242,13 +254,17 @@ int main()
 
 		//draw light object
 		glBindVertexArray(lightVAO);
-		glPatchParameteri();
-		glDrawArrays(GL_TRIANGLES, 0, 12);
+		logFile << "BIND_LIGHT_ARRAY: " << glGetError() << std::endl;
+		glPatchParameteri(GL_PATCH_VERTICES, 16);
+		logFile << "LIGHT_PATCHES: " << glGetError() << std::endl;
+		glDrawArrays(GL_PATCHES, 0, 12);
+		logFile << "DRAW_LIGHT_OBJECT: " << glGetError() << std::endl;
 		glBindVertexArray(0);
 
 		glfwSwapBuffers(window);
 	}
 	glfwTerminate();
+	logFile.close();
 	return 0;
 }
 

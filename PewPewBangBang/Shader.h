@@ -16,7 +16,6 @@ public:
 	GLuint Program;
 	//constructor reads and builds shader
 	Shader(const GLchar* vertexPath, const GLchar* fragmentPath);
-	Shader(const GLchar* vertexPath, const GLchar* fragmentPath, const GLchar* tessControlPath, const GLchar* tessEvalPath);
 	//use the program
 	void use();
 };

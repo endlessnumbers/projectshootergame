@@ -1,7 +1,7 @@
 #version 430
-out vec4 colour;
+out vec4 color;
 
 void main()
 {
-	colour = vec4(1.0f);
+	color = vec4(1.0f);
 }

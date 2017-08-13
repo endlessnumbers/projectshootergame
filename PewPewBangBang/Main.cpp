@@ -28,6 +28,11 @@ GLfloat lastY = HEIGHT / 2.0;
 
 //light vector
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+//cube vector
+glm::vec3 cubePos(0.0f, 0.0f, -7.2f);
+
+//movement
+int waypoint = 1;
 
 int main()
 {
@@ -40,7 +45,7 @@ int main()
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
 	// Create a GLFWwindow object that we can use for GLFW's functions
-	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", nullptr, nullptr);
+	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "PewPewBangBang", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
 
 	// Set the required callback functions
@@ -66,7 +71,7 @@ int main()
 	glEnable(GL_DEBUG_OUTPUT);
 
 	Shader lightShader("light.vs", "light.frag");
-	Shader lampShader("lamp.vs", "lamp.frag", "lamp.tc", "lamp.te");
+	Shader lampShader("lamp.vs", "lamp.frag");
 	camera.MouseSensitivity = 0.05f;
 
 	GLfloat vertices[] = {
@@ -132,69 +137,15 @@ int main()
 	glEnableVertexAttribArray(1);
 	glBindVertexArray(0);
 
-	//Create star
-	const GLint starFaces[] = {
-		2, 1, 0,
-		3, 2, 0,
-		4, 3, 0,
-		5, 4, 0,
-		1, 5, 0,
-		11, 6, 7,
-		11, 7, 8,
-		11, 8, 9,
-		11, 9, 10,
-		11, 10, 6,
-		1, 2, 6,
-		2, 3, 7,
-		3, 4, 8,
-		4, 5, 9,
-		5, 1, 10,
-		2, 7, 6,
-		3, 8, 7,
-		4, 9, 8,
-		5, 10, 9,
-		1, 6, 10 
-	};
-
-	const GLfloat starVerts[] = {
-		0.000f, 0.000f, 1.000f,
-		0.894f, 0.000f, 0.447f,
-		0.276f, 0.851f, 0.447f,
-		-0.724f, 0.526f, 0.447f,
-		-0.724f, -0.526f, 0.447f,
-		0.276f, -0.851f, 0.447f,
-		0.724f, 0.526f, -0.447f,
-		-0.276f, 0.851f, -0.447f,
-		-0.894f, 0.000f, -0.447f,
-		-0.276f, -0.851f, -0.447f,
-		0.724f, -0.526f, -0.447f,
-		0.000f, 0.000f, -1.000f 
-	};
-
-	int indexCount = sizeof(starFaces) / sizeof(starFaces[0]);
-
 	GLuint lightVAO;
+
 	glGenVertexArrays(1, &lightVAO);
 	glBindVertexArray(lightVAO);
-	logFile << "LIGHT_VAO: " << glGetError() << std::endl;
-
-	//create VBO for positions
-	GLuint starVBO;
-	glGenBuffers(1, &starVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, starVBO);
-	logFile << "LIGHT_VBO_BIND: " << glGetError() << std::endl;
-	glBufferData(GL_ARRAY_BUFFER, sizeof(starVerts), starVerts, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-	logFile << "LIGHT_VBO_BUFFER_DATA: " << glGetError() << std::endl;
-
-	//VBO for indices
-	GLuint indices;
-	glGenBuffers(1, &indices);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(starFaces), starFaces, GL_STATIC_DRAW);
-	logFile << "INDICES_BUFFER_DATA: " << glGetError() << std::endl;
-
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	//lamp - same shape as the other cube!
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GL_FLOAT), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+	glBindVertexArray(0);
 	//game loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -204,6 +155,95 @@ int main()
 		GLfloat currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
+
+		//calculate movement
+	/*	if (forward)
+		{
+			if (movement < 1000)
+			{
+				cubePos.y += 0.001f;
+				movement++;
+				logFile << "Movement forward -- CUBE Y: " << cubePos.y << "  MOVEMENT VAL:  " << movement << std::endl;
+			}
+			else if (movement >= 1000 || cubePos.y >= 1.0f)
+			{
+				forward = false;
+				logFile << "Make false " << std::endl;
+			}
+		}
+		else if (!forward)
+		{
+			if (movement > 0)
+			{
+				cubePos.y -= 0.001f;
+				movement--;
+				logFile << "Movement downward -- CUBE Y: " << cubePos.y << "  MOVEMENT VAL:  " << movement << std::endl;
+			}
+			else if (movement <= 0 || cubePos.y <= 0.0f)
+			{
+				forward = true;
+				logFile << "Make true " << std::endl;
+			}
+		}*/
+
+		switch (waypoint)
+		{
+			case 1:
+				//WAYPOINT 1
+				if (cubePos.x > -2.4f || cubePos.z < 7.2f)
+				{
+					cubePos.x -= 0.0005f;
+					cubePos.z += 0.003f;
+				}
+				else
+				{
+					waypoint = 2;
+					logFile << "WAYPOINT 2" << std::endl;
+				}
+				break;
+			case 2:
+				//WAYPOINT 2
+				if (cubePos.x < 0.0f || cubePos.z < 9.6f)
+				{
+					cubePos.x += 0.001f;
+					cubePos.z += 0.001f;
+				}
+				else
+				{
+					waypoint = 3;
+					logFile << "WAYPOINT 3" << std::endl;
+				}
+				break;
+			case 3:
+				//WAYPOINT 3
+				if (cubePos.x < 2.4f || cubePos.z > 7.2f)
+				{
+					cubePos.x += 0.001f;
+					cubePos.z -= 0.001f;
+				}
+				else
+				{
+					waypoint = 4;
+					logFile << "WAYPOINT 4" << std::endl;
+				}
+				break;
+			case 4:
+				//BACK TO START
+				if (cubePos.x > 0.0f || cubePos.z > -7.2f)
+				{
+					cubePos.x -= 0.0005f;
+					cubePos.z -= 0.003f;
+				}
+				else
+				{
+					waypoint = 1;
+					logFile << "WAYPOINT 1" << std::endl;
+				}
+				break;
+			default:
+				logFile << "MOVEMENT ERROR!" << std::endl;
+		}
+		
 
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -233,8 +273,10 @@ int main()
 
 		//draw container
 		glBindVertexArray(containerVAO);
-		glm::mat4 model;
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		glm::mat4 cubemodel;
+		cubemodel = glm::mat4();
+		cubemodel = glm::translate(cubemodel, cubePos);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(cubemodel));
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
 
@@ -247,18 +289,15 @@ int main()
 		//set matrices
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-		model = glm::mat4();
-		model = glm::translate(model, lightPos);
-		model = glm::scale(model, glm::vec3(0.2f));	//so lamp is a smaller cube!
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		glm::mat4 lightmodel;
+		lightmodel = glm::mat4();
+		lightmodel = glm::translate(lightmodel, lightPos);
+		lightmodel = glm::scale(lightmodel, glm::vec3(0.2f));	//so lamp is a smaller cube!
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(lightmodel));
 
 		//draw light object
 		glBindVertexArray(lightVAO);
-		logFile << "BIND_LIGHT_ARRAY: " << glGetError() << std::endl;
-		glPatchParameteri(GL_PATCH_VERTICES, 16);
-		logFile << "LIGHT_PATCHES: " << glGetError() << std::endl;
-		glDrawArrays(GL_PATCHES, 0, 12);
-		logFile << "DRAW_LIGHT_OBJECT: " << glGetError() << std::endl;
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
 
 		glfwSwapBuffers(window);

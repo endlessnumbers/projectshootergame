@@ -1,22 +1,26 @@
-﻿Build started 13/08/2017 17:33:26.
+﻿Build started 14/08/2017 13:54:06.
      1>Project "U:\Documents\3D Android Game\PewPewBangBang\PewPewBangBang\PewPewBangBang.vcxproj" on node 2 (Build target(s)).
-     1>ClCompile:
-         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt Main.cpp
-         Main.cpp
-     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(155): warning C4244: 'initializing' : conversion from 'double' to 'GLfloat', possible loss of data
-     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(329): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
-     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(330): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
-     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(334): warning C4244: 'initializing' : conversion from 'double' to 'GLfloat', possible loss of data
-     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(335): warning C4244: 'initializing' : conversion from 'double' to 'GLfloat', possible loss of data
-     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(337): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
-     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(338): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
-     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\main.cpp(345): warning C4244: 'argument' : conversion from 'double' to 'GLfloat', possible loss of data
-       Link:
-         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"U:\Documents\3D Android Game\PewPewBangBang\Debug\PewPewBangBang.exe" /INCREMENTAL /NOLOGO glew32s.lib glfw3.lib opengl32.lib SOIL.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"U:\Documents\3D Android Game\PewPewBangBang\Debug\PewPewBangBang.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"U:\Documents\3D Android Game\PewPewBangBang\Debug\PewPewBangBang.lib" /MACHINE:X86 Debug\Main.obj
+     1>Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"U:\Documents\3D Android Game\PewPewBangBang\Debug\PewPewBangBang.exe" /INCREMENTAL /NOLOGO glew32s.lib glfw3.lib opengl32.lib SOIL.lib freetype.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"U:\Documents\3D Android Game\PewPewBangBang\Debug\PewPewBangBang.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"U:\Documents\3D Android Game\PewPewBangBang\Debug\PewPewBangBang.lib" /MACHINE:X86 Debug\Main.obj
          Debug\Shader.obj
+     1>LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs; use /NODEFAULTLIB:library
+     1>LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
+     1>Shader.obj : warning LNK4049: locally defined symbol ___glewAttachShader imported
+     1>Shader.obj : warning LNK4049: locally defined symbol ___glewCompileShader imported
+     1>Shader.obj : warning LNK4049: locally defined symbol ___glewCreateProgram imported
+     1>Shader.obj : warning LNK4049: locally defined symbol ___glewCreateShader imported
+     1>Shader.obj : warning LNK4049: locally defined symbol ___glewDeleteShader imported
+     1>Shader.obj : warning LNK4049: locally defined symbol ___glewGetProgramInfoLog imported
+     1>Shader.obj : warning LNK4049: locally defined symbol ___glewGetProgramiv imported
+     1>Shader.obj : warning LNK4049: locally defined symbol ___glewGetShaderInfoLog imported
+     1>Shader.obj : warning LNK4049: locally defined symbol ___glewGetShaderiv imported
+     1>Shader.obj : warning LNK4049: locally defined symbol ___glewLinkProgram imported
+     1>Shader.obj : warning LNK4049: locally defined symbol ___glewShaderSource imported
+     1>Shader.obj : warning LNK4049: locally defined symbol ___glewUseProgram imported
+     1>glew32s.lib(glew.obj) : warning LNK4099: PDB 'vc120.pdb' was not found with 'glew32s.lib(glew.obj)' or at 'U:\Documents\3D Android Game\PewPewBangBang\Debug\vc120.pdb'; linking object as if no debug info
          PewPewBangBang.vcxproj -> U:\Documents\3D Android Game\PewPewBangBang\Debug\PewPewBangBang.exe
      1>Done Building Project "U:\Documents\3D Android Game\PewPewBangBang\PewPewBangBang\PewPewBangBang.vcxproj" (Build target(s)).
 
 Build succeeded.
 
-Time Elapsed 00:00:03.13
+Time Elapsed 00:00:01.57

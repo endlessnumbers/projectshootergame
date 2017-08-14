@@ -4,16 +4,22 @@
 #include <glm\glm.hpp>
 #include <glm\gtc\matrix_transform.hpp>
 #include <glm\gtc\type_ptr.hpp>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 #include "Camera.h"
 #include "Shader.h"
 #include <iostream>
 #include <fstream>
+#include <map>
 
 // Function prototypes
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void click_callback(GLFWwindow* window, int button, int action, int mods);
 void do_movement();
+void drawHUD();
+void displayText();
 
 // Window dimensions
 const GLuint WIDTH = 800, HEIGHT = 600;
@@ -30,6 +36,9 @@ GLfloat lastY = HEIGHT / 2.0;
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 //cube vector
 glm::vec3 cubePos(0.0f, 0.0f, -7.2f);
+
+//open log file for debugging output
+std::ofstream logFile;
 
 //movement
 int waypoint = 1;
@@ -66,9 +75,10 @@ int main()
 
 	//enable depth testing
 	glEnable(GL_DEPTH_TEST);
-	
-	//DEBUG - enable debugging
-	glEnable(GL_DEBUG_OUTPUT);
+
+	//enable blending
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	Shader lightShader("light.vs", "light.frag");
 	Shader lampShader("lamp.vs", "lamp.frag");
@@ -118,8 +128,7 @@ int main()
 		-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f
 	};
 
-	//open log file for debugging output
-	std::ofstream logFile;
+	//open logfile
 	logFile.open("log.txt", std::ofstream::app);
 
 	GLuint VBO, containerVAO;
@@ -157,43 +166,14 @@ int main()
 		lastFrame = currentFrame;
 
 		//calculate movement
-	/*	if (forward)
-		{
-			if (movement < 1000)
-			{
-				cubePos.y += 0.001f;
-				movement++;
-				logFile << "Movement forward -- CUBE Y: " << cubePos.y << "  MOVEMENT VAL:  " << movement << std::endl;
-			}
-			else if (movement >= 1000 || cubePos.y >= 1.0f)
-			{
-				forward = false;
-				logFile << "Make false " << std::endl;
-			}
-		}
-		else if (!forward)
-		{
-			if (movement > 0)
-			{
-				cubePos.y -= 0.001f;
-				movement--;
-				logFile << "Movement downward -- CUBE Y: " << cubePos.y << "  MOVEMENT VAL:  " << movement << std::endl;
-			}
-			else if (movement <= 0 || cubePos.y <= 0.0f)
-			{
-				forward = true;
-				logFile << "Make true " << std::endl;
-			}
-		}*/
-
 		switch (waypoint)
 		{
 			case 1:
 				//WAYPOINT 1
-				if (cubePos.x > -2.4f || cubePos.z < 7.2f)
+				if (cubePos.x > -0.5f && cubePos.z < -6.2f)
 				{
-					cubePos.x -= 0.0005f;
-					cubePos.z += 0.003f;
+					cubePos.x -= 0.001f;
+					cubePos.z += 0.002f;
 				}
 				else
 				{
@@ -203,9 +183,8 @@ int main()
 				break;
 			case 2:
 				//WAYPOINT 2
-				if (cubePos.x < 0.0f || cubePos.z < 9.6f)
+				if (cubePos.z < -5.5f)
 				{
-					cubePos.x += 0.001f;
 					cubePos.z += 0.001f;
 				}
 				else
@@ -216,10 +195,10 @@ int main()
 				break;
 			case 3:
 				//WAYPOINT 3
-				if (cubePos.x < 2.4f || cubePos.z > 7.2f)
+				//SHOOT!!
+				if (cubePos.z < -4.0f)
 				{
-					cubePos.x += 0.001f;
-					cubePos.z -= 0.001f;
+					cubePos.z += 0.001f;
 				}
 				else
 				{
@@ -228,11 +207,101 @@ int main()
 				}
 				break;
 			case 4:
-				//BACK TO START
-				if (cubePos.x > 0.0f || cubePos.z > -7.2f)
+				//waypoint 4
+				if (cubePos.x > -0.75f && cubePos.z < -2.0f)
+				{
+					cubePos.x -= 0.00025f;
+					cubePos.z += 0.002f;
+				}
+				else
+				{
+					waypoint = 5;
+					logFile << "WAYPOINT 5" << std::endl;
+				}
+				break;
+			case 5:
+				//waypoint 5
+				if (cubePos.x > -2.75f && cubePos.z < 6.0f)
+				{
+					cubePos.x -= 0.0005f;
+					cubePos.z += 0.001f;
+				}
+				else
+				{
+					waypoint = 6;
+					logFile << "WAYPOINT 6" << std::endl;
+				}
+				break;
+			case 6:
+				//waypoint 6
+				if (cubePos.x < 0.0f && cubePos.z < 13.75f)
+				{
+					cubePos.x += 0.0005f;
+					cubePos.z += 0.0025f;
+				}
+				else
+				{
+					waypoint = 7;
+					logFile << "WAYPOINT 7" << std::endl;
+				}
+				break;
+			case 7:
+				//waypoint 7
+				if (cubePos.x < 2.4f && cubePos.z > 7.2f)
+				{
+					cubePos.x += 0.0005f;
+					cubePos.z -= 0.003f;
+				}
+				else
+				{
+					waypoint = 8;
+					logFile << "WAYPOINT 8" << std::endl;
+				}
+				break;
+			case 8:
+				//waypoint 8
+				if (cubePos.x < 3.0f && cubePos.z > -3.0f)
+				{
+					cubePos.x += 0.0005f;
+					cubePos.z -= 0.003f;
+				}
+				else
+				{
+					waypoint = 9;
+					logFile << "WAYPOINT 9" << std::endl;
+				}
+				break;
+			case 9:
+				//waypoint 9
+				if (cubePos.x < 3.1f && cubePos.z > -6.5f)
+				{
+					cubePos.x += 0.0005f;
+					cubePos.z -= 0.003f;
+				}
+				else
+				{
+					waypoint = 10;
+					logFile << "WAYPOINT 10" << std::endl;
+				}
+				break;
+			case 10:
+				//waypoint 10
+				if (cubePos.x > 1.5f && cubePos.z > -7.2f)
 				{
 					cubePos.x -= 0.0005f;
 					cubePos.z -= 0.003f;
+				}
+				else
+				{
+					waypoint = 11;
+					logFile << "WAYPOINT 11" << std::endl;
+				}
+				break;
+			case 11:
+				//back to start
+				if (cubePos.x > 0.0f)
+				{
+					cubePos.x -= 0.0015f;
 				}
 				else
 				{
@@ -243,10 +312,17 @@ int main()
 			default:
 				logFile << "MOVEMENT ERROR!" << std::endl;
 		}
-		
 
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+
+		glPushMatrix();
 
 		//set uniforms and draw objects
 		lightShader.use();
@@ -300,6 +376,10 @@ int main()
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
 
+		glPopMatrix();
+
+		drawHUD();
+
 		glfwSwapBuffers(window);
 	}
 	glfwTerminate();
@@ -345,6 +425,21 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	camera.ProcessMouseScroll(yoffset);
 }
 
+void click_callback(GLFWwindow* window, int button, int action, int mods)
+{
+	glfwSetMouseButtonCallback(window, GLFW_MOUSE_BUTTON_1);
+
+	int lmbState = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
+
+	if (lmbState == GLFW_PRESS)
+	{
+		//shoot laser
+
+		//if cube is in front, kill
+
+	}
+}
+
 void do_movement()
 {
 	// Camera controls
@@ -356,4 +451,94 @@ void do_movement()
 		camera.ProcessKeyboard(LEFT, deltaTime);
 	if (keys[GLFW_KEY_D])
 		camera.ProcessKeyboard(RIGHT, deltaTime);
+}
+
+void drawHUD()
+{
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glTranslatef(0, 0, 0);
+	glOrtho(0.0, WIDTH, HEIGHT, 0.0, -1.0, 1.0);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	glDisable(GL_CULL_FACE);
+
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	glBegin(GL_QUADS);
+	glColor3f(255.0f, 255.0f, 255.0f);
+	glVertex2f(0.0, 0.0);
+	glVertex2f(10.0, 0.0);
+	glVertex2f(10.0, 10.0);
+	glVertex2f(0.0, 10.0);
+	glEnd();
+
+	//switch back to 3D rendering
+	glMatrixMode(GL_PROJECTION);
+	glMatrixMode(GL_MODELVIEW);
+}
+
+//learnopengl.com code
+void displayText()
+{
+	//load font
+	FT_Library ft;
+	if (FT_Init_FreeType(&ft))
+		std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
+	FT_Face face;
+	if (FT_New_Face(ft, "fonts/arial.ttf", 0, &face))
+		std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
+
+	//define font size
+	FT_Set_Pixel_Sizes(face, 0, 48);
+	//load a glyph
+	if (FT_Load_Char(face, 'X', FT_LOAD_RENDER))
+		std::cout << "ERROR::FREETYPE: Failed to load glyph" << std::endl;
+
+	//Struct to store generated data for each character loaded
+	struct Character{
+		GLuint textureID;
+		glm::ivec2 size;	//size of glyph
+		glm::ivec2 bearing;	//offset from baseline to top of glyph
+		GLuint advance;		//offset to advance to next glyph
+	};
+
+	std::map<GLchar, Character> charMap;	//map stores key-value pairs; stores character data
+
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);	//textures can be multiple of 1 byte
+	//loop all characters in ASCII set
+	for (GLubyte c = 0; c < 128; c++)
+	{
+		//load character glyph
+		if (FT_Load_Char(face, c, FT_LOAD_RENDER))
+		{
+			std::cout << "ERROR::FREETYPE: Failed to load glyph" << std::endl;
+			continue;
+		}
+		//generate texture
+		GLuint texture;
+		glGenTextures(1, &texture);
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED,
+			face->glyph->bitmap.width,
+			face->glyph->bitmap.rows,
+			0, GL_RED, GL_UNSIGNED_BYTE,
+			face->glyph->bitmap.buffer);
+		//set texture options
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		//store character
+		Character character = {
+			texture,
+			glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
+			glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
+			face->glyph->advance.x
+		};
+		charMap.insert(std::pair<GLchar, Character>(c, character));
+	}
+	FT_Done_Face(face);
+	FT_Done_FreeType(ft);
 }

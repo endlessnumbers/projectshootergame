@@ -39,8 +39,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>U:\Documents\3D Android Game\PewPewBangBang\libs;$(IncludePath)</IncludePath>
-    <LibraryPath>U:\Documents\3D Android Game\PewPewBangBang\libs\libs;$(LibraryPath)</LibraryPath>
+    <IncludePath>U:\Documents\3D Android Game\PewPewBangBang\libs\freetype2;U:\Documents\3D Android Game\PewPewBangBang\libs;$(IncludePath)</IncludePath>
+    <LibraryPath>U:\Documents\3D Android Game\PewPewBangBang\libs\freetype2;U:\Documents\3D Android Game\PewPewBangBang\libs\libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -50,7 +50,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>glew32s.lib;glfw3.lib;opengl32.lib;SOIL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glew32s.lib;glfw3.lib;opengl32.lib;SOIL.lib;freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

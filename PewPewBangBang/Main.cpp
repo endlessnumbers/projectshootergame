@@ -9,7 +9,9 @@
 #include "Camera.h"
 #include "Shader.h"
 #include <iostream>
+#include <sstream>
 #include <fstream>
+#include <string>
 #include <map>
 
 // Function prototypes
@@ -19,10 +21,25 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void click_callback(GLFWwindow* window, int button, int action, int mods);
 void do_movement();
 void drawHUD();
-void displayText();
+void loadFont();
+void renderText(Shader &s, std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 colour);
+void gameOver();
 
 // Window dimensions
 const GLuint WIDTH = 800, HEIGHT = 600;
+
+//Struct to store generated data for each character loaded
+struct Character{
+	GLuint textureID;
+	glm::ivec2 size;	//size of glyph
+	glm::ivec2 bearing;	//offset from baseline to top of glyph
+	GLuint advance;		//offset to advance to next glyph
+};
+
+std::map<GLchar, Character> charMap;	//map stores key-value pairs; stores character data
+//these should be moved later!
+GLuint fontVAO;
+GLuint fontVBO;
 
 bool keys[1024];
 GLfloat deltaTime = 0.0f;	//time between current frame and last frame
@@ -42,6 +59,8 @@ std::ofstream logFile;
 
 //movement
 int waypoint = 1;
+
+int playerHealth = 100;
 
 int main()
 {
@@ -75,14 +94,25 @@ int main()
 
 	//enable depth testing
 	glEnable(GL_DEPTH_TEST);
-
 	//enable blending
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	//setup shaders
 	Shader lightShader("light.vs", "light.frag");
 	Shader lampShader("lamp.vs", "lamp.frag");
+	Shader fontShader("font.vs", "font.frag");
 	camera.MouseSensitivity = 0.05f;
+
+	//prepare font shaders
+	glm::mat4 fontProjection = glm::ortho(0.0f, static_cast<GLfloat>(WIDTH), 0.0f,
+		static_cast<GLfloat>(HEIGHT));
+	fontShader.use();
+	glUniformMatrix4fv(glGetUniformLocation(fontShader.Program, "projection"), 1, GL_FALSE,
+		glm::value_ptr(fontProjection));
+
+	//load the font
+	loadFont();
 
 	GLfloat vertices[] = {
 		-0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
@@ -155,19 +185,46 @@ int main()
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GL_FLOAT), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
 	glBindVertexArray(0);
+
+	//VAO/VBOs for texture quads
+	glGenVertexArrays(1, &fontVAO);
+	glGenBuffers(1, &fontVBO);
+	glBindVertexArray(fontVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, fontVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), 0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
 	//game loop
 	while (!glfwWindowShouldClose(window))
 	{
 		glfwPollEvents();
-		do_movement();
+		
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		GLfloat currentFrame = glfwGetTime();
-		deltaTime = currentFrame - lastFrame;
-		lastFrame = currentFrame;
-
-		//calculate movement
-		switch (waypoint)
+		//check if player is dead
+		if (playerHealth <= 0)
 		{
+			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			renderText(fontShader, "Game Over!", 250.0f, 300.0f, 2.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+			renderText(fontShader, "Press Esc to Exit", 30.0f, 40.0f, 1.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+			//also render score
+			glfwSwapBuffers(window);
+		}
+		else
+		{
+			do_movement();
+
+			GLfloat currentFrame = glfwGetTime();
+			deltaTime = currentFrame - lastFrame;
+			lastFrame = currentFrame;
+
+			//calculate movement
+			switch (waypoint)
+			{
 			case 1:
 				//WAYPOINT 1
 				if (cubePos.x > -0.5f && cubePos.z < -6.2f)
@@ -202,6 +259,7 @@ int main()
 				}
 				else
 				{
+					playerHealth -= 5;
 					waypoint = 4;
 					logFile << "WAYPOINT 4" << std::endl;
 				}
@@ -311,76 +369,68 @@ int main()
 				break;
 			default:
 				logFile << "MOVEMENT ERROR!" << std::endl;
+			}
+
+			std::ostringstream healthText;
+			healthText << "Health: " << playerHealth;
+
+			renderText(fontShader, healthText.str(), 25.0f, 25.0f, 1.0f, glm::vec3(0.5f, 0.8f, 0.2f));
+			renderText(fontShader, "Score: ", 540.0f, 570.0f, 0.5f, glm::vec3(0.3f, 0.7f, 0.9f));
+
+			//set uniforms and draw objects
+			lightShader.use();
+			GLint objectColorLoc = glGetUniformLocation(lightShader.Program, "objectColor");
+			GLint lightColorLoc = glGetUniformLocation(lightShader.Program, "lightColor");
+			GLint lightPosLoc = glGetUniformLocation(lightShader.Program, "lightPos");
+			GLint viewPosLoc = glGetUniformLocation(lightShader.Program, "viewPos");
+			glUniform3f(viewPosLoc, camera.Position.x, camera.Position.y, camera.Position.z);
+			glUniform3f(lightPosLoc, lightPos.x, lightPos.y, lightPos.z);
+			glUniform3f(objectColorLoc, 1.0f, 0.5f, 0.31f);
+			glUniform3f(lightColorLoc, 1.0f, 1.0f, 1.0f);
+
+			//camera transformations
+			glm::mat4 view;
+			view = camera.GetViewMatrix();
+			glm::mat4 projection = glm::perspective(camera.Zoom, (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 100.0f);
+			//get the uniform locations
+			GLint modelLoc = glGetUniformLocation(lightShader.Program, "model");
+			GLint viewLoc = glGetUniformLocation(lightShader.Program, "view");
+			GLint projLoc = glGetUniformLocation(lightShader.Program, "projection");
+			//pass matrices to shader
+			glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+			glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+			//draw container
+			glBindVertexArray(containerVAO);
+			glm::mat4 cubemodel;
+			cubemodel = glm::mat4();
+			cubemodel = glm::translate(cubemodel, cubePos);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(cubemodel));
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+			glBindVertexArray(0);
+
+			//draw lamp
+			lampShader.use();
+			//get location objects for matrices on lamp shader
+			modelLoc = glGetUniformLocation(lampShader.Program, "model");
+			viewLoc = glGetUniformLocation(lampShader.Program, "view");
+			projLoc = glGetUniformLocation(lampShader.Program, "projection");
+			//set matrices
+			glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+			glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+			glm::mat4 lightmodel;
+			lightmodel = glm::mat4();
+			lightmodel = glm::translate(lightmodel, lightPos);
+			lightmodel = glm::scale(lightmodel, glm::vec3(0.2f));	//so lamp is a smaller cube!
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(lightmodel));
+
+			//draw light object
+			glBindVertexArray(lightVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+			glBindVertexArray(0);
+
+			glfwSwapBuffers(window);
 		}
-
-		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-
-		glPushMatrix();
-
-		//set uniforms and draw objects
-		lightShader.use();
-		GLint objectColorLoc = glGetUniformLocation(lightShader.Program, "objectColor");
-		GLint lightColorLoc = glGetUniformLocation(lightShader.Program, "lightColor");
-		GLint lightPosLoc = glGetUniformLocation(lightShader.Program, "lightPos");
-		GLint viewPosLoc = glGetUniformLocation(lightShader.Program, "viewPos");
-		glUniform3f(viewPosLoc, camera.Position.x, camera.Position.y, camera.Position.z);
-		glUniform3f(lightPosLoc, lightPos.x, lightPos.y, lightPos.z);
-		glUniform3f(objectColorLoc, 1.0f, 0.5f, 0.31f);
-		glUniform3f(lightColorLoc, 1.0f, 1.0f, 1.0f);
-
-		//camera transformations
-		glm::mat4 view;
-		view = camera.GetViewMatrix();
-		glm::mat4 projection = glm::perspective(camera.Zoom, (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 100.0f);
-		//get the uniform locations
-		GLint modelLoc = glGetUniformLocation(lightShader.Program, "model");
-		GLint viewLoc = glGetUniformLocation(lightShader.Program, "view");
-		GLint projLoc = glGetUniformLocation(lightShader.Program, "projection");
-		//pass matrices to shader
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
-		//draw container
-		glBindVertexArray(containerVAO);
-		glm::mat4 cubemodel;
-		cubemodel = glm::mat4();
-		cubemodel = glm::translate(cubemodel, cubePos);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(cubemodel));
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		glBindVertexArray(0);
-
-		//draw lamp
-		lampShader.use();
-		//get location objects for matrices on lamp shader
-		modelLoc = glGetUniformLocation(lampShader.Program, "model");
-		viewLoc = glGetUniformLocation(lampShader.Program, "view");
-		projLoc = glGetUniformLocation(lampShader.Program, "projection");
-		//set matrices
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-		glm::mat4 lightmodel;
-		lightmodel = glm::mat4();
-		lightmodel = glm::translate(lightmodel, lightPos);
-		lightmodel = glm::scale(lightmodel, glm::vec3(0.2f));	//so lamp is a smaller cube!
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(lightmodel));
-
-		//draw light object
-		glBindVertexArray(lightVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		glBindVertexArray(0);
-
-		glPopMatrix();
-
-		drawHUD();
-
-		glfwSwapBuffers(window);
 	}
 	glfwTerminate();
 	logFile.close();
@@ -480,7 +530,7 @@ void drawHUD()
 }
 
 //learnopengl.com code
-void displayText()
+void loadFont()
 {
 	//load font
 	FT_Library ft;
@@ -492,21 +542,9 @@ void displayText()
 
 	//define font size
 	FT_Set_Pixel_Sizes(face, 0, 48);
-	//load a glyph
-	if (FT_Load_Char(face, 'X', FT_LOAD_RENDER))
-		std::cout << "ERROR::FREETYPE: Failed to load glyph" << std::endl;
-
-	//Struct to store generated data for each character loaded
-	struct Character{
-		GLuint textureID;
-		glm::ivec2 size;	//size of glyph
-		glm::ivec2 bearing;	//offset from baseline to top of glyph
-		GLuint advance;		//offset to advance to next glyph
-	};
-
-	std::map<GLchar, Character> charMap;	//map stores key-value pairs; stores character data
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);	//textures can be multiple of 1 byte
+
 	//loop all characters in ASCII set
 	for (GLubyte c = 0; c < 128; c++)
 	{
@@ -542,3 +580,47 @@ void displayText()
 	FT_Done_Face(face);
 	FT_Done_FreeType(ft);
 }
+
+void renderText(Shader &s, std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 colour)
+{
+	//activate corresponding render state
+	s.use();
+	glUniform3f(glGetUniformLocation(s.Program, "textColour"), colour.x, colour.y, colour.z);
+	glActiveTexture(GL_TEXTURE0);
+	glBindVertexArray(fontVAO);
+
+	//iterate through all characters
+	std::string::const_iterator c;
+	for (c = text.begin(); c != text.end(); c++)
+	{
+		Character ch = charMap[*c];
+
+		GLfloat xpos = x + ch.bearing.x * scale;
+		GLfloat ypos = y - (ch.size.y - ch.bearing.y) * scale;
+
+		GLfloat w = ch.size.x * scale;
+		GLfloat h = ch.size.y * scale;
+		//update VBO for each character
+		GLfloat vertices[6][4] = {
+			{xpos, ypos + h, 0.0, 0.0},
+			{xpos, ypos,	 0.0, 1.0},
+			{xpos + w, ypos, 1.0, 1.0},
+			{xpos, ypos + h, 0.0, 0.0},
+			{xpos + w, ypos, 1.0, 1.0},
+			{xpos + w, ypos + h, 1.0, 0.0}
+		};
+		//Render font texture over quad
+		glBindTexture(GL_TEXTURE_2D, ch.textureID);
+		//update content of VBO memory
+		glBindBuffer(GL_ARRAY_BUFFER, fontVBO);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		//render quad
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		//now advance cursors for next glyph
+		x += (ch.advance >> 6) * scale; //bitshift by 6 to get value in pixels
+	}
+	glBindVertexArray(0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+

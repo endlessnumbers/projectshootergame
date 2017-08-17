@@ -94,6 +94,7 @@ int main()
 
 	//enable depth testing
 	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
 	//enable blending
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -102,6 +103,7 @@ int main()
 	Shader lightShader("light.vs", "light.frag");
 	Shader lampShader("lamp.vs", "lamp.frag");
 	Shader fontShader("font.vs", "font.frag");
+	Shader pickingShader("picking.vs", "picking.frag");
 	camera.MouseSensitivity = 0.05f;
 
 	//prepare font shaders
@@ -201,9 +203,86 @@ int main()
 	while (!glfwWindowShouldClose(window))
 	{
 		glfwPollEvents();
+
+		//PICKING
+		glfwSetMouseButtonCallback(window, GLFW_MOUSE_BUTTON_1);
+
+		//int lmbState = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
+		int lmbState = 1;
+
+		if (lmbState == 1)	//shoot when button released
+		{
+			//shoot laser
+			//if cube is in front, kill
+
+			//clear screen in white, for picking
+			glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			pickingShader.use();
+
+			GLint colourLoc = glGetUniformLocation(pickingShader.Program, "objectColor");
+			glUniform3f(colourLoc, 1.0f, 0.5f, 0.31f);
+			
+			//camera transformations
+			glm::mat4 pickView;
+			pickView = camera.GetViewMatrix();
+			glm::mat4 pickProjection = glm::perspective(camera.Zoom, (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 100.0f);
+			//get the uniform locations
+			GLint modelLoc = glGetUniformLocation(pickingShader.Program, "model");
+			GLint viewLoc = glGetUniformLocation(pickingShader.Program, "view");
+			GLint projLoc = glGetUniformLocation(pickingShader.Program, "projection");
+			//pass matrices to shader
+			glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(pickView));
+			glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(pickProjection));
+
+			//draw container
+			glBindVertexArray(containerVAO);
+			glm::mat4 pickCubeModel;
+			pickCubeModel = glm::mat4();
+			pickCubeModel = glm::translate(pickCubeModel, cubePos);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(pickCubeModel));
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+			glBindVertexArray(0);
+
+
+			//picking the colour
+			glFlush();
+			glFinish();
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+			//read the pixel at the centre of the screen
+			unsigned char data[4];
+			glReadPixels(WIDTH / 2, HEIGHT / 2, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, data);
+
+			int pickedID =
+				data[0] +
+				data[1] * 256 +
+				data[2] * 256 * 256;
+
+			if (pickedID == 0x00ffffff)
+			{
+				renderText(fontShader, "BALLOONS", 540.0f, 570.0f, 0.5f, glm::vec3(0.3f, 0.7f, 0.9f));
+			}
+			else
+			{
+				//picked a cube
+				renderText(fontShader, "CUBE ", 540.0f, 570.0f, 0.5f, glm::vec3(0.3f, 0.7f, 0.9f));
+			}
+
+			//DON'T NEED THIS CODE IN FINAL VERSION
+			std::ostringstream healthText;
+			healthText << "Health: " << playerHealth;
+
+			renderText(fontShader, healthText.str(), 25.0f, 25.0f, 1.0f, glm::vec3(0.5f, 0.8f, 0.2f));
+
+
+			glfwSwapBuffers(window);
+			//END UNNECESSARY CODE
+		}
+		//END PICKING
 		
-		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		/*glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);*/
 
 		//check if player is dead
 		if (playerHealth <= 0)
@@ -371,66 +450,66 @@ int main()
 				logFile << "MOVEMENT ERROR!" << std::endl;
 			}
 
-			std::ostringstream healthText;
-			healthText << "Health: " << playerHealth;
+			//std::ostringstream healthText;
+			//healthText << "Health: " << playerHealth;
 
-			renderText(fontShader, healthText.str(), 25.0f, 25.0f, 1.0f, glm::vec3(0.5f, 0.8f, 0.2f));
-			renderText(fontShader, "Score: ", 540.0f, 570.0f, 0.5f, glm::vec3(0.3f, 0.7f, 0.9f));
-
-			//set uniforms and draw objects
-			lightShader.use();
-			GLint objectColorLoc = glGetUniformLocation(lightShader.Program, "objectColor");
-			GLint lightColorLoc = glGetUniformLocation(lightShader.Program, "lightColor");
-			GLint lightPosLoc = glGetUniformLocation(lightShader.Program, "lightPos");
-			GLint viewPosLoc = glGetUniformLocation(lightShader.Program, "viewPos");
-			glUniform3f(viewPosLoc, camera.Position.x, camera.Position.y, camera.Position.z);
-			glUniform3f(lightPosLoc, lightPos.x, lightPos.y, lightPos.z);
-			glUniform3f(objectColorLoc, 1.0f, 0.5f, 0.31f);
-			glUniform3f(lightColorLoc, 1.0f, 1.0f, 1.0f);
-
-			//camera transformations
-			glm::mat4 view;
-			view = camera.GetViewMatrix();
-			glm::mat4 projection = glm::perspective(camera.Zoom, (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 100.0f);
-			//get the uniform locations
-			GLint modelLoc = glGetUniformLocation(lightShader.Program, "model");
-			GLint viewLoc = glGetUniformLocation(lightShader.Program, "view");
-			GLint projLoc = glGetUniformLocation(lightShader.Program, "projection");
-			//pass matrices to shader
-			glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-			glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
-			//draw container
-			glBindVertexArray(containerVAO);
-			glm::mat4 cubemodel;
-			cubemodel = glm::mat4();
-			cubemodel = glm::translate(cubemodel, cubePos);
-			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(cubemodel));
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-			glBindVertexArray(0);
-
-			//draw lamp
-			lampShader.use();
-			//get location objects for matrices on lamp shader
-			modelLoc = glGetUniformLocation(lampShader.Program, "model");
-			viewLoc = glGetUniformLocation(lampShader.Program, "view");
-			projLoc = glGetUniformLocation(lampShader.Program, "projection");
-			//set matrices
-			glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-			glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-			glm::mat4 lightmodel;
-			lightmodel = glm::mat4();
-			lightmodel = glm::translate(lightmodel, lightPos);
-			lightmodel = glm::scale(lightmodel, glm::vec3(0.2f));	//so lamp is a smaller cube!
-			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(lightmodel));
-
-			//draw light object
-			glBindVertexArray(lightVAO);
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-			glBindVertexArray(0);
-
-			glfwSwapBuffers(window);
+			//renderText(fontShader, healthText.str(), 25.0f, 25.0f, 1.0f, glm::vec3(0.5f, 0.8f, 0.2f));
+			//renderText(fontShader, "Score: ", 540.0f, 570.0f, 0.5f, glm::vec3(0.3f, 0.7f, 0.9f));
 		}
+		//	//set uniforms and draw objects
+		//	lightShader.use();
+		//	GLint objectColorLoc = glGetUniformLocation(lightShader.Program, "objectColor");
+		//	GLint lightColorLoc = glGetUniformLocation(lightShader.Program, "lightColor");
+		//	GLint lightPosLoc = glGetUniformLocation(lightShader.Program, "lightPos");
+		//	GLint viewPosLoc = glGetUniformLocation(lightShader.Program, "viewPos");
+		//	glUniform3f(viewPosLoc, camera.Position.x, camera.Position.y, camera.Position.z);
+		//	glUniform3f(lightPosLoc, lightPos.x, lightPos.y, lightPos.z);
+		//	glUniform3f(objectColorLoc, 1.0f, 0.5f, 0.31f);
+		//	glUniform3f(lightColorLoc, 1.0f, 1.0f, 1.0f);
+
+		//	//camera transformations
+		//	glm::mat4 view;
+		//	view = camera.GetViewMatrix();
+		//	glm::mat4 projection = glm::perspective(camera.Zoom, (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 100.0f);
+		//	//get the uniform locations
+		//	GLint modelLoc = glGetUniformLocation(lightShader.Program, "model");
+		//	GLint viewLoc = glGetUniformLocation(lightShader.Program, "view");
+		//	GLint projLoc = glGetUniformLocation(lightShader.Program, "projection");
+		//	//pass matrices to shader
+		//	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		//	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+		//	//draw container
+		//	glBindVertexArray(containerVAO);
+		//	glm::mat4 cubemodel;
+		//	cubemodel = glm::mat4();
+		//	cubemodel = glm::translate(cubemodel, cubePos);
+		//	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(cubemodel));
+		//	glDrawArrays(GL_TRIANGLES, 0, 36);
+		//	glBindVertexArray(0);
+
+		//	//draw lamp
+		//	lampShader.use();
+		//	//get location objects for matrices on lamp shader
+		//	modelLoc = glGetUniformLocation(lampShader.Program, "model");
+		//	viewLoc = glGetUniformLocation(lampShader.Program, "view");
+		//	projLoc = glGetUniformLocation(lampShader.Program, "projection");
+		//	//set matrices
+		//	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		//	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+		//	glm::mat4 lightmodel;
+		//	lightmodel = glm::mat4();
+		//	lightmodel = glm::translate(lightmodel, lightPos);
+		//	lightmodel = glm::scale(lightmodel, glm::vec3(0.2f));	//so lamp is a smaller cube!
+		//	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(lightmodel));
+
+		//	//draw light object
+		//	glBindVertexArray(lightVAO);
+		//	glDrawArrays(GL_TRIANGLES, 0, 36);
+		//	glBindVertexArray(0);
+
+		//	glfwSwapBuffers(window);
+		//}
 	}
 	glfwTerminate();
 	logFile.close();
@@ -475,19 +554,9 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	camera.ProcessMouseScroll(yoffset);
 }
 
-void click_callback(GLFWwindow* window, int button, int action, int mods)
+void click_callback(GLFWwindow* window, int button, int action, int mods, Shader &pickingShader)
 {
-	glfwSetMouseButtonCallback(window, GLFW_MOUSE_BUTTON_1);
-
-	int lmbState = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
-
-	if (lmbState == GLFW_PRESS)
-	{
-		//shoot laser
-
-		//if cube is in front, kill
-
-	}
+	
 }
 
 void do_movement()

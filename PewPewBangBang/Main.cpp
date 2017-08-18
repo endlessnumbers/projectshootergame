@@ -1,18 +1,27 @@
 #define GLEW_STATIC
 #include <glew\glew.h>
 #include <GLFW\glfw3.h>
+//GLM
 #include <glm\glm.hpp>
 #include <glm\gtc\matrix_transform.hpp>
 #include <glm\gtc\type_ptr.hpp>
+//FREETYPE
 #include <ft2build.h>
 #include FT_FREETYPE_H
+//IRRKLANG
+#include <irrklang\irrKlang.h>
+//LOCAL
 #include "Camera.h"
 #include "Shader.h"
+#include "Cube.h"
+//C++ STANDARD
 #include <iostream>
 #include <sstream>
 #include <fstream>
 #include <string>
 #include <map>
+#include <random>
+using namespace irrklang;
 
 // Function prototypes
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
@@ -24,6 +33,8 @@ void drawHUD();
 void loadFont();
 void renderText(Shader &s, std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 colour);
 void gameOver();
+void calculateMovement(Cube &current, int i);
+void drawLaser();
 
 // Window dimensions
 const GLuint WIDTH = 800, HEIGHT = 600;
@@ -35,6 +46,7 @@ struct Character{
 	glm::ivec2 bearing;	//offset from baseline to top of glyph
 	GLuint advance;		//offset to advance to next glyph
 };
+
 
 std::map<GLchar, Character> charMap;	//map stores key-value pairs; stores character data
 //these should be moved later!
@@ -52,15 +64,31 @@ GLfloat lastY = HEIGHT / 2.0;
 //light vector
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 //cube vector
-glm::vec3 cubePos(0.0f, 0.0f, -7.2f);
+//glm::vec3 cubePos(0.0f, 0.0f, -7.2f);
+
+//CREATE CUBES
+glm::vec3 cubeStartPos[] = {
+	glm::vec3(0.0f, 0.0f, -7.2f),
+	glm::vec3(-2.1f, 1.4f, -8.0f),
+	glm::vec3(3.4f, -0.8f, -6.4f)
+};
+
+Cube cubeArray[] = {
+	Cube(0, glm::vec3(0.0f, 0.0f, -7.2f), glm::vec3(0.0f, 1.0f, 0.0f)),	//green
+	Cube(1, cubeStartPos[1], glm::vec3(0.0f, 0.0f, 1.0f)),	//blue
+	Cube(2, cubeStartPos[2], glm::vec3(1.0f, 0.0f, 0.0f))	//red
+};
 
 //open log file for debugging output
 std::ofstream logFile;
 
 //movement
 int waypoint = 1;
+int score = 0;
 
-int playerHealth = 100;
+int playerHealth = 10;
+
+ISoundEngine *SoundEngine = createIrrKlangDevice();
 
 int main()
 {
@@ -104,6 +132,9 @@ int main()
 	Shader lampShader("lamp.vs", "lamp.frag");
 	Shader fontShader("font.vs", "font.frag");
 	Shader pickingShader("picking.vs", "picking.frag");
+	Shader particleShader("particle.vs", "particle.frag");
+	Shader laserShader("laser.vs", "laser.frag");
+
 	camera.MouseSensitivity = 0.05f;
 
 	//prepare font shaders
@@ -160,13 +191,20 @@ int main()
 		-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f
 	};
 
+
+	GLfloat laserVerts[] = {
+		// positions         // colors
+		0.03f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f,   // bottom right
+		-0.03f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f,   // bottom left
+		0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f    // top 
+	};
+
 	//open logfile
 	logFile.open("log.txt", std::ofstream::app);
 
 	GLuint VBO, containerVAO;
 	glGenVertexArrays(1, &containerVAO);
 	glBindVertexArray(containerVAO);
-
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -199,6 +237,21 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
+	//laser
+	GLuint laserVAO, laserVBO;
+	glGenVertexArrays(1, &laserVAO);
+	glGenBuffers(1, &laserVBO);
+	glBindVertexArray(laserVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, laserVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(laserVerts), laserVerts, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+	//colour
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
 	//game loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -206,49 +259,61 @@ int main()
 
 		//PICKING
 		glfwSetMouseButtonCallback(window, GLFW_MOUSE_BUTTON_1);
-
-		//int lmbState = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
-		int lmbState = 1;
-
-		if (lmbState == 1)	//shoot when button released
-		{
-			//shoot laser
-			//if cube is in front, kill
-
-			//clear screen in white, for picking
-			glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			pickingShader.use();
-
-			GLint colourLoc = glGetUniformLocation(pickingShader.Program, "objectColor");
-			glUniform3f(colourLoc, 1.0f, 0.5f, 0.31f);
 			
-			//camera transformations
-			glm::mat4 pickView;
-			pickView = camera.GetViewMatrix();
-			glm::mat4 pickProjection = glm::perspective(camera.Zoom, (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 100.0f);
-			//get the uniform locations
-			GLint modelLoc = glGetUniformLocation(pickingShader.Program, "model");
-			GLint viewLoc = glGetUniformLocation(pickingShader.Program, "view");
-			GLint projLoc = glGetUniformLocation(pickingShader.Program, "projection");
-			//pass matrices to shader
-			glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(pickView));
-			glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(pickProjection));
+		//clear screen in white, for picking
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		pickingShader.use();
 
-			//draw container
-			glBindVertexArray(containerVAO);
-			glm::mat4 pickCubeModel;
-			pickCubeModel = glm::mat4();
-			pickCubeModel = glm::translate(pickCubeModel, cubePos);
-			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(pickCubeModel));
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-			glBindVertexArray(0);
+		for (int i = 0; i < 3; i++)
+		{
+			//respawn cubes
+			if (!cubeArray[i].alive && (glfwGetTime() - cubeArray[i].timeKilled) >= 10.0)
+			{
+				cubeArray[i].alive = true;
+			}
 
+			if (cubeArray[i].alive)	//only do them if they're alive or respawn them
+			{
+				//calculate movement - they should only move and shoot if they're alive!
+				calculateMovement(cubeArray[i], cubeArray[i].cubeID);
 
-			//picking the colour
-			glFlush();
-			glFinish();
-			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+				GLint colourLoc = glGetUniformLocation(pickingShader.Program, "objectColor");
+				glUniform3f(colourLoc, cubeArray[i].pickingColour.x, cubeArray[i].pickingColour.y, cubeArray[i].pickingColour.z);
+
+				//camera transformations
+				glm::mat4 pickView;
+				pickView = camera.GetViewMatrix();
+				glm::mat4 pickProjection = glm::perspective(camera.Zoom, (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 100.0f);
+				//get the uniform locations
+				GLint modelLoc = glGetUniformLocation(pickingShader.Program, "model");
+				GLint viewLoc = glGetUniformLocation(pickingShader.Program, "view");
+				GLint projLoc = glGetUniformLocation(pickingShader.Program, "projection");
+				//pass matrices to shader
+				glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(pickView));
+				glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(pickProjection));
+
+				//draw container
+				glBindVertexArray(containerVAO);
+				glm::mat4 pickCubeModel;
+				pickCubeModel = glm::mat4();
+				pickCubeModel = glm::translate(pickCubeModel, cubeArray[i].cubePos);
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(pickCubeModel));
+				glDrawArrays(GL_TRIANGLES, 0, 36);
+				glBindVertexArray(0);
+			}
+		}
+
+		//picking the colour
+		glFlush();
+		glFinish();
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+		int mouseButton = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
+		if (mouseButton)
+		{
+			//laser sound
+			SoundEngine->play2D("audio/bell.wav", GL_FALSE);
 
 			//read the pixel at the centre of the screen
 			unsigned char data[4];
@@ -259,38 +324,50 @@ int main()
 				data[1] * 256 +
 				data[2] * 256 * 256;
 
+			std::cout << pickedID << std::endl;
+
 			if (pickedID == 0x00ffffff)
 			{
-				renderText(fontShader, "BALLOONS", 540.0f, 570.0f, 0.5f, glm::vec3(0.3f, 0.7f, 0.9f));
+				renderText(fontShader, "BACKGROUND", 540.0f, 570.0f, 0.5f, glm::vec3(0.3f, 0.7f, 0.9f));
 			}
-			else
+			else if (pickedID == 0x0000ff00)
 			{
-				//picked a cube
-				renderText(fontShader, "CUBE ", 540.0f, 570.0f, 0.5f, glm::vec3(0.3f, 0.7f, 0.9f));
+				renderText(fontShader, "CUBE GREEN", 540.0f, 570.0f, 0.5f, glm::vec3(0.3f, 0.7f, 0.9f));
+				cubeArray[0].alive = false;
+				cubeArray[0].timeKilled = glfwGetTime();
+				score += 100;
 			}
-
-			//DON'T NEED THIS CODE IN FINAL VERSION
-			std::ostringstream healthText;
-			healthText << "Health: " << playerHealth;
-
-			renderText(fontShader, healthText.str(), 25.0f, 25.0f, 1.0f, glm::vec3(0.5f, 0.8f, 0.2f));
-
-
-			glfwSwapBuffers(window);
-			//END UNNECESSARY CODE
+			else if (pickedID == 0x00ff0000)
+			{
+				renderText(fontShader, "CUBE BLUE", 540.0f, 570.0f, 0.5f, glm::vec3(0.3f, 0.7f, 0.9f));
+				cubeArray[1].alive = false;
+				cubeArray[1].timeKilled = glfwGetTime();
+				score += 100;
+			}
+			else if (pickedID == 0x000000ff)
+			{
+				renderText(fontShader, "CUBE RED", 540.0f, 570.0f, 0.5f, glm::vec3(0.3f, 0.7f, 0.9f));
+				cubeArray[2].alive = false;
+				cubeArray[2].timeKilled = glfwGetTime();
+				score += 100;
+			}
 		}
+		
 		//END PICKING
 		
-		/*glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);*/
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		std::ostringstream scoreText;
+		scoreText << "Score: " << score;
 
 		//check if player is dead
 		if (playerHealth <= 0)
 		{
 			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-			renderText(fontShader, "Game Over!", 250.0f, 300.0f, 2.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-			renderText(fontShader, "Press Esc to Exit", 30.0f, 40.0f, 1.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-			//also render score
+			renderText(fontShader, "Game Over!", 30.0f, 300.0f, 2.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+			renderText(fontShader, "Press Esc to Exit", 30.0f, 100.0f, 1.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+			renderText(fontShader, scoreText.str(), 30.0f, 20.0f, 0.7f, glm::vec3(1.0f, 0.0f, 0.0f));
 			glfwSwapBuffers(window);
 		}
 		else
@@ -301,215 +378,86 @@ int main()
 			deltaTime = currentFrame - lastFrame;
 			lastFrame = currentFrame;
 
-			//calculate movement
-			switch (waypoint)
+			std::ostringstream healthText;
+			healthText << "Health: " << playerHealth;
+
+			renderText(fontShader, healthText.str(), 25.0f, 25.0f, 1.0f, glm::vec3(0.5f, 0.8f, 0.2f));
+			renderText(fontShader, scoreText.str(), 540.0f, 570.0f, 0.5f, glm::vec3(0.3f, 0.7f, 0.9f));
+		
+			//set uniforms and draw objects
+			lightShader.use();
+			GLint objectColorLoc = glGetUniformLocation(lightShader.Program, "objectColor");
+			GLint lightColorLoc = glGetUniformLocation(lightShader.Program, "lightColor");
+			GLint lightPosLoc = glGetUniformLocation(lightShader.Program, "lightPos");
+			GLint viewPosLoc = glGetUniformLocation(lightShader.Program, "viewPos");
+			glUniform3f(viewPosLoc, camera.Position.x, camera.Position.y, camera.Position.z);
+			glUniform3f(lightPosLoc, lightPos.x, lightPos.y, lightPos.z);
+			glUniform3f(objectColorLoc, 1.0f, 0.5f, 0.31f);
+			glUniform3f(lightColorLoc, 1.0f, 1.0f, 1.0f);
+
+			//camera transformations
+			glm::mat4 view;
+			view = camera.GetViewMatrix();
+			glm::mat4 projection = glm::perspective(camera.Zoom, (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 100.0f);
+			//get the uniform locations
+			GLint modelLoc = glGetUniformLocation(lightShader.Program, "model");
+			GLint viewLoc = glGetUniformLocation(lightShader.Program, "view");
+			GLint projLoc = glGetUniformLocation(lightShader.Program, "projection");
+			//pass matrices to shader
+			glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+			glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+			for (int i = 0; i < 3; i++)
 			{
-			case 1:
-				//WAYPOINT 1
-				if (cubePos.x > -0.5f && cubePos.z < -6.2f)
+				if (cubeArray[i].alive)
 				{
-					cubePos.x -= 0.001f;
-					cubePos.z += 0.002f;
+					//draw container
+					glBindVertexArray(containerVAO);
+					glm::mat4 cubemodel;
+					cubemodel = glm::mat4();
+					cubemodel = glm::translate(cubemodel, cubeArray[i].cubePos);
+					glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(cubemodel));
+					glDrawArrays(GL_TRIANGLES, 0, 36);
+					glBindVertexArray(0);
 				}
-				else
-				{
-					waypoint = 2;
-					logFile << "WAYPOINT 2" << std::endl;
-				}
-				break;
-			case 2:
-				//WAYPOINT 2
-				if (cubePos.z < -5.5f)
-				{
-					cubePos.z += 0.001f;
-				}
-				else
-				{
-					waypoint = 3;
-					logFile << "WAYPOINT 3" << std::endl;
-				}
-				break;
-			case 3:
-				//WAYPOINT 3
-				//SHOOT!!
-				if (cubePos.z < -4.0f)
-				{
-					cubePos.z += 0.001f;
-				}
-				else
-				{
-					playerHealth -= 5;
-					waypoint = 4;
-					logFile << "WAYPOINT 4" << std::endl;
-				}
-				break;
-			case 4:
-				//waypoint 4
-				if (cubePos.x > -0.75f && cubePos.z < -2.0f)
-				{
-					cubePos.x -= 0.00025f;
-					cubePos.z += 0.002f;
-				}
-				else
-				{
-					waypoint = 5;
-					logFile << "WAYPOINT 5" << std::endl;
-				}
-				break;
-			case 5:
-				//waypoint 5
-				if (cubePos.x > -2.75f && cubePos.z < 6.0f)
-				{
-					cubePos.x -= 0.0005f;
-					cubePos.z += 0.001f;
-				}
-				else
-				{
-					waypoint = 6;
-					logFile << "WAYPOINT 6" << std::endl;
-				}
-				break;
-			case 6:
-				//waypoint 6
-				if (cubePos.x < 0.0f && cubePos.z < 13.75f)
-				{
-					cubePos.x += 0.0005f;
-					cubePos.z += 0.0025f;
-				}
-				else
-				{
-					waypoint = 7;
-					logFile << "WAYPOINT 7" << std::endl;
-				}
-				break;
-			case 7:
-				//waypoint 7
-				if (cubePos.x < 2.4f && cubePos.z > 7.2f)
-				{
-					cubePos.x += 0.0005f;
-					cubePos.z -= 0.003f;
-				}
-				else
-				{
-					waypoint = 8;
-					logFile << "WAYPOINT 8" << std::endl;
-				}
-				break;
-			case 8:
-				//waypoint 8
-				if (cubePos.x < 3.0f && cubePos.z > -3.0f)
-				{
-					cubePos.x += 0.0005f;
-					cubePos.z -= 0.003f;
-				}
-				else
-				{
-					waypoint = 9;
-					logFile << "WAYPOINT 9" << std::endl;
-				}
-				break;
-			case 9:
-				//waypoint 9
-				if (cubePos.x < 3.1f && cubePos.z > -6.5f)
-				{
-					cubePos.x += 0.0005f;
-					cubePos.z -= 0.003f;
-				}
-				else
-				{
-					waypoint = 10;
-					logFile << "WAYPOINT 10" << std::endl;
-				}
-				break;
-			case 10:
-				//waypoint 10
-				if (cubePos.x > 1.5f && cubePos.z > -7.2f)
-				{
-					cubePos.x -= 0.0005f;
-					cubePos.z -= 0.003f;
-				}
-				else
-				{
-					waypoint = 11;
-					logFile << "WAYPOINT 11" << std::endl;
-				}
-				break;
-			case 11:
-				//back to start
-				if (cubePos.x > 0.0f)
-				{
-					cubePos.x -= 0.0015f;
-				}
-				else
-				{
-					waypoint = 1;
-					logFile << "WAYPOINT 1" << std::endl;
-				}
-				break;
-			default:
-				logFile << "MOVEMENT ERROR!" << std::endl;
 			}
 
-			//std::ostringstream healthText;
-			//healthText << "Health: " << playerHealth;
+			//draw lamp
+			lampShader.use();
+			//get location objects for matrices on lamp shader
+			modelLoc = glGetUniformLocation(lampShader.Program, "model");
+			viewLoc = glGetUniformLocation(lampShader.Program, "view");
+			projLoc = glGetUniformLocation(lampShader.Program, "projection");
+			//set matrices
+			glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+			glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+			glm::mat4 lightmodel;
+			lightmodel = glm::mat4();
+			lightmodel = glm::translate(lightmodel, lightPos);
+			lightmodel = glm::scale(lightmodel, glm::vec3(0.2f));	//so lamp is a smaller cube!
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(lightmodel));
 
-			//renderText(fontShader, healthText.str(), 25.0f, 25.0f, 1.0f, glm::vec3(0.5f, 0.8f, 0.2f));
-			//renderText(fontShader, "Score: ", 540.0f, 570.0f, 0.5f, glm::vec3(0.3f, 0.7f, 0.9f));
+			//draw light object
+			glBindVertexArray(lightVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+			glBindVertexArray(0);
+
+			//draw laser
+			//laserShader.use();
+			//glBindVertexArray(laserVAO);
+			//std::cout << "Bind array" << glGetError() << std::endl;
+			//glDrawArrays(GL_LINES, 0, 2);
+			//std::cout << "Draw" << glGetError() << std::endl;
+
+			if (mouseButton)
+			{
+				laserShader.use();
+				glBindVertexArray(laserVAO);
+				glDrawArrays(GL_TRIANGLES, 0, 3);
+			}
+
+			glfwSwapBuffers(window);
 		}
-		//	//set uniforms and draw objects
-		//	lightShader.use();
-		//	GLint objectColorLoc = glGetUniformLocation(lightShader.Program, "objectColor");
-		//	GLint lightColorLoc = glGetUniformLocation(lightShader.Program, "lightColor");
-		//	GLint lightPosLoc = glGetUniformLocation(lightShader.Program, "lightPos");
-		//	GLint viewPosLoc = glGetUniformLocation(lightShader.Program, "viewPos");
-		//	glUniform3f(viewPosLoc, camera.Position.x, camera.Position.y, camera.Position.z);
-		//	glUniform3f(lightPosLoc, lightPos.x, lightPos.y, lightPos.z);
-		//	glUniform3f(objectColorLoc, 1.0f, 0.5f, 0.31f);
-		//	glUniform3f(lightColorLoc, 1.0f, 1.0f, 1.0f);
-
-		//	//camera transformations
-		//	glm::mat4 view;
-		//	view = camera.GetViewMatrix();
-		//	glm::mat4 projection = glm::perspective(camera.Zoom, (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 100.0f);
-		//	//get the uniform locations
-		//	GLint modelLoc = glGetUniformLocation(lightShader.Program, "model");
-		//	GLint viewLoc = glGetUniformLocation(lightShader.Program, "view");
-		//	GLint projLoc = glGetUniformLocation(lightShader.Program, "projection");
-		//	//pass matrices to shader
-		//	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-		//	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
-		//	//draw container
-		//	glBindVertexArray(containerVAO);
-		//	glm::mat4 cubemodel;
-		//	cubemodel = glm::mat4();
-		//	cubemodel = glm::translate(cubemodel, cubePos);
-		//	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(cubemodel));
-		//	glDrawArrays(GL_TRIANGLES, 0, 36);
-		//	glBindVertexArray(0);
-
-		//	//draw lamp
-		//	lampShader.use();
-		//	//get location objects for matrices on lamp shader
-		//	modelLoc = glGetUniformLocation(lampShader.Program, "model");
-		//	viewLoc = glGetUniformLocation(lampShader.Program, "view");
-		//	projLoc = glGetUniformLocation(lampShader.Program, "projection");
-		//	//set matrices
-		//	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-		//	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-		//	glm::mat4 lightmodel;
-		//	lightmodel = glm::mat4();
-		//	lightmodel = glm::translate(lightmodel, lightPos);
-		//	lightmodel = glm::scale(lightmodel, glm::vec3(0.2f));	//so lamp is a smaller cube!
-		//	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(lightmodel));
-
-		//	//draw light object
-		//	glBindVertexArray(lightVAO);
-		//	glDrawArrays(GL_TRIANGLES, 0, 36);
-		//	glBindVertexArray(0);
-
-		//	glfwSwapBuffers(window);
-		//}
 	}
 	glfwTerminate();
 	logFile.close();
@@ -693,3 +641,154 @@ void renderText(Shader &s, std::string text, GLfloat x, GLfloat y, GLfloat scale
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+void calculateMovement(Cube &current, int i)
+{
+	//calculate movement
+	switch (waypoint)
+	{
+	case 1:
+		//WAYPOINT 1
+		if (current.cubePos.x > (cubeStartPos[i].x - -0.5f) && current.cubePos.z < (cubeStartPos[i].z + 1.0f))
+		{
+			current.cubePos.x -= 0.005f;
+			current.cubePos.z += 0.01f;
+		}
+		else
+		{
+			waypoint = 2;
+			logFile << "WAYPOINT 2" << std::endl;
+		}
+		break;
+	case 2:
+		//WAYPOINT 2
+		if (current.cubePos.z < (cubeStartPos[i].z + 1.0f))
+		{
+			current.cubePos.z += 0.005f;
+		}
+		else
+		{
+			waypoint = 3;
+			logFile << "WAYPOINT 3" << std::endl;
+		}
+		break;
+	case 3:
+		//WAYPOINT 3
+		//SHOOT!!
+		if (current.cubePos.z < (cubeStartPos[i].z + 3.0f))
+		{
+			current.cubePos.z += 0.005f;
+		}
+		else
+		{
+			//playerHealth -= 5;
+			waypoint = 4;
+			logFile << "WAYPOINT 4" << std::endl;
+		}
+		break;
+	case 4:
+		//waypoint 4
+		if (current.cubePos.x > (cubeStartPos[i].x - 3.25f) && current.cubePos.z < (cubeStartPos[i].z + 7.0f))
+		{
+			current.cubePos.x -= 0.0025f;
+			current.cubePos.z += 0.002f;
+		}
+		else
+		{
+			waypoint = 5;
+			logFile << "WAYPOINT 5" << std::endl;
+		}
+		break;
+	case 5:
+		//waypoint 5
+		if (current.cubePos.x > (cubeStartPos[i].x - 5.75f) && current.cubePos.z < (cubeStartPos[i].z + 14.0f))
+		{
+			current.cubePos.x -= 0.005f;
+			current.cubePos.z += 0.001f;
+		}
+		else
+		{
+			waypoint = 6;
+			logFile << "WAYPOINT 6" << std::endl;
+		}
+		break;
+	case 6:
+		//waypoint 6
+		if (current.cubePos.x < cubeStartPos[i].x && current.cubePos.z < (cubeStartPos[i].z + 17.75f))
+		{
+			current.cubePos.x += 0.0005f;
+			current.cubePos.z += 0.0025f;
+		}
+		else
+		{
+			waypoint = 7;
+			logFile << "WAYPOINT 7" << std::endl;
+		}
+		break;
+	case 7:
+		//waypoint 7
+		if (current.cubePos.x < (cubeStartPos[i].x + 7.4f) && current.cubePos.z >(cubeStartPos[i].z +8.2f))
+		{
+			current.cubePos.x += 0.0005f;
+			current.cubePos.z -= 0.003f;
+		}
+		else
+		{
+			waypoint = 8;
+			logFile << "WAYPOINT 8" << std::endl;
+		}
+		break;
+	case 8:
+		//waypoint 8
+		if (current.cubePos.x < (cubeStartPos[i].x + 8.4f) && current.cubePos.z >(cubeStartPos[i].z - -4.0f))
+		{
+			current.cubePos.x += 0.0005f;
+			current.cubePos.z -= 0.003f;
+		}
+		else
+		{
+			waypoint = 9;
+			logFile << "WAYPOINT 9" << std::endl;
+		}
+		break;
+	case 9:
+		//waypoint 9
+		if (current.cubePos.x < (cubeStartPos[i].x + 4.1f) && current.cubePos.z >(cubeStartPos[i].z - -2.5f))
+		{
+			current.cubePos.x += 0.0005f;
+			current.cubePos.z -= 0.003f;
+		}
+		else
+		{
+			waypoint = 10;
+			logFile << "WAYPOINT 10" << std::endl;
+		}
+		break;
+	case 10:
+		//waypoint 10
+		if (current.cubePos.x > (cubeStartPos[i].x + 1.5f) && current.cubePos.z > cubeStartPos[i].z)
+		{
+			current.cubePos.x -= 0.0005f;
+			current.cubePos.z -= 0.003f;
+		}
+		else
+		{
+			waypoint = 11;
+			logFile << "WAYPOINT 11" << std::endl;
+		}
+		break;
+	case 11:
+		//back to start
+		if (current.cubePos.x > cubeStartPos[i].x)
+		{
+			current.cubePos.x -= 0.0015f;
+		}
+		else
+		{
+			waypoint = 1;
+			logFile << "WAYPOINT 1" << std::endl;
+		}
+		break;
+	default:
+		logFile << "MOVEMENT ERROR!" << std::endl;
+	}
+}

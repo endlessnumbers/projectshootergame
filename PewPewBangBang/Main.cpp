@@ -26,7 +26,6 @@ using namespace irrklang;
 // Function prototypes
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void click_callback(GLFWwindow* window, int button, int action, int mods);
 void do_movement();
 void drawHUD();
@@ -35,6 +34,7 @@ void renderText(Shader &s, std::string text, GLfloat x, GLfloat y, GLfloat scale
 void gameOver();
 void calculateMovement(Cube &current, int i);
 void drawLaser();
+void drawCrosshair(Shader &shader, GLuint VAO);
 
 // Window dimensions
 const GLuint WIDTH = 800, HEIGHT = 600;
@@ -67,26 +67,25 @@ glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 //glm::vec3 cubePos(0.0f, 0.0f, -7.2f);
 
 //CREATE CUBES
-glm::vec3 cubeStartPos[] = {
-	glm::vec3(0.0f, 0.0f, -7.2f),
-	glm::vec3(-2.1f, 1.4f, -8.0f),
-	glm::vec3(3.4f, -0.8f, -6.4f)
+const glm::vec3 cubeStartPos[] = {
+	glm::vec3(0.0f, 0.0f, -15.0f),
+	glm::vec3(-2.0f, 0.0f, -17.0f),
+	glm::vec3(4.0f, -3.0f, -20.0f)
 };
 
 Cube cubeArray[] = {
-	Cube(0, glm::vec3(0.0f, 0.0f, -7.2f), glm::vec3(0.0f, 1.0f, 0.0f)),	//green
-	Cube(1, cubeStartPos[1], glm::vec3(0.0f, 0.0f, 1.0f)),	//blue
-	Cube(2, cubeStartPos[2], glm::vec3(1.0f, 0.0f, 0.0f))	//red
+	Cube(cubeStartPos[0], glm::vec3(0.0f, 1.0f, 0.0f)),	//green
+	Cube(cubeStartPos[1], glm::vec3(0.0f, 0.0f, 1.0f)),	//blue
+	Cube(cubeStartPos[2], glm::vec3(1.0f, 0.0f, 0.0f))	//red
 };
 
 //open log file for debugging output
 std::ofstream logFile;
 
 //movement
-int waypoint = 1;
 int score = 0;
 
-int playerHealth = 10;
+int playerHealth = 100;
 
 ISoundEngine *SoundEngine = createIrrKlangDevice();
 
@@ -107,7 +106,6 @@ int main()
 	// Set the required callback functions
 	glfwSetKeyCallback(window, key_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
-	glfwSetScrollCallback(window, scroll_callback);
 
 	//activate mouse input; glfw will capture the cursor
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -128,12 +126,12 @@ int main()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	//setup shaders
-	Shader lightShader("light.vs", "light.frag");
-	Shader lampShader("lamp.vs", "lamp.frag");
-	Shader fontShader("font.vs", "font.frag");
-	Shader pickingShader("picking.vs", "picking.frag");
-	Shader particleShader("particle.vs", "particle.frag");
-	Shader laserShader("laser.vs", "laser.frag");
+	Shader lightShader("Shaders/light.vs", "Shaders/light.frag");
+	Shader lampShader("Shaders/lamp.vs", "Shaders/lamp.frag");
+	Shader fontShader("Shaders/font.vs", "Shaders/font.frag");
+	Shader pickingShader("Shaders/picking.vs", "Shaders/picking.frag");
+	Shader particleShader("Shaders/particle.vs", "Shaders/particle.frag");
+	Shader triangleShader("Shaders/triangle.vs", "Shaders/triangle.frag");
 
 	camera.MouseSensitivity = 0.05f;
 
@@ -199,6 +197,28 @@ int main()
 		0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f    // top 
 	};
 
+	//left
+	GLfloat crosshair1[] = {
+		// positions         // colors
+		0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,   // bottom right
+		-0.02f, 0.01f, 0.0f, 1.0f, 0.0f, 0.0f,   // bottom left
+		-0.01f, 0.03f, 0.0f, 1.0f, 0.0f, 0.0f    // top 
+	};
+	//bottom
+	GLfloat crosshair2[] = {
+		// positions         // colors
+		0.01f, -0.02f, 0.0f, 1.0f, 0.0f, 0.0f,   // bottom right
+		-0.01f, -0.02f, 0.0f, 1.0f, 0.0f, 0.0f,   // bottom left
+		0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f    // top 
+	};
+	//right
+	GLfloat crosshair3[] = {
+		// positions         // colors
+		0.02f, 0.01f, 0.0f, 1.0f, 0.0f, 0.0f,   // bottom right
+		0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,   // bottom left
+		0.01f, 0.03f, 0.0f, 1.0f, 0.0f, 0.0f    // top 
+	};
+
 	//open logfile
 	logFile.open("log.txt", std::ofstream::app);
 
@@ -252,6 +272,53 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
+	//crosshair
+	GLuint crosshair1VAO, crosshair1VBO;
+	glGenVertexArrays(1, &crosshair1VAO);
+	glGenBuffers(1, &crosshair1VBO);
+	glBindVertexArray(crosshair1VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, crosshair1VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(crosshair1), crosshair1, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+	//colour
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+	//crosshair
+	GLuint crosshair2VAO, crosshair2VBO;
+	glGenVertexArrays(1, &crosshair2VAO);
+	glGenBuffers(1, &crosshair2VBO);
+	glBindVertexArray(crosshair2VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, crosshair2VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(crosshair2), crosshair2, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+	//colour
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+	//crosshair
+	GLuint crosshair3VAO, crosshair3VBO;
+	glGenVertexArrays(1, &crosshair3VAO);
+	glGenBuffers(1, &crosshair3VBO);
+	glBindVertexArray(crosshair3VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, crosshair3VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(crosshair3), crosshair3, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+	//colour
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+	SoundEngine->play2D("audio/ambientloop.mp3", GL_TRUE);
+
 	//game loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -268,15 +335,18 @@ int main()
 		for (int i = 0; i < 3; i++)
 		{
 			//respawn cubes
-			if (!cubeArray[i].alive && (glfwGetTime() - cubeArray[i].timeKilled) >= 10.0)
+			if (!cubeArray[i].alive && (glfwGetTime() - cubeArray[i].timeKilled) >= 3.0)
 			{
 				cubeArray[i].alive = true;
+				//reset position
+				cubeArray[i].cubePos = cubeStartPos[i];
+				cubeArray[i].waypoint = 1;
 			}
 
 			if (cubeArray[i].alive)	//only do them if they're alive or respawn them
 			{
 				//calculate movement - they should only move and shoot if they're alive!
-				calculateMovement(cubeArray[i], cubeArray[i].cubeID);
+				calculateMovement(cubeArray[i], i);
 
 				GLint colourLoc = glGetUniformLocation(pickingShader.Program, "objectColor");
 				glUniform3f(colourLoc, cubeArray[i].pickingColour.x, cubeArray[i].pickingColour.y, cubeArray[i].pickingColour.z);
@@ -313,7 +383,7 @@ int main()
 		if (mouseButton)
 		{
 			//laser sound
-			SoundEngine->play2D("audio/bell.wav", GL_FALSE);
+			SoundEngine->play2D("audio/phasers.wav", GL_FALSE);
 
 			//read the pixel at the centre of the screen
 			unsigned char data[4];
@@ -326,36 +396,32 @@ int main()
 
 			std::cout << pickedID << std::endl;
 
-			if (pickedID == 0x00ffffff)
+			if (pickedID == 0x0000ff00)
 			{
-				renderText(fontShader, "BACKGROUND", 540.0f, 570.0f, 0.5f, glm::vec3(0.3f, 0.7f, 0.9f));
-			}
-			else if (pickedID == 0x0000ff00)
-			{
-				renderText(fontShader, "CUBE GREEN", 540.0f, 570.0f, 0.5f, glm::vec3(0.3f, 0.7f, 0.9f));
 				cubeArray[0].alive = false;
 				cubeArray[0].timeKilled = glfwGetTime();
+				SoundEngine->play2D("audio/boing.wav", GL_FALSE);
 				score += 100;
 			}
 			else if (pickedID == 0x00ff0000)
 			{
-				renderText(fontShader, "CUBE BLUE", 540.0f, 570.0f, 0.5f, glm::vec3(0.3f, 0.7f, 0.9f));
 				cubeArray[1].alive = false;
 				cubeArray[1].timeKilled = glfwGetTime();
+				SoundEngine->play2D("audio/boing.wav", GL_FALSE);
 				score += 100;
 			}
 			else if (pickedID == 0x000000ff)
 			{
-				renderText(fontShader, "CUBE RED", 540.0f, 570.0f, 0.5f, glm::vec3(0.3f, 0.7f, 0.9f));
 				cubeArray[2].alive = false;
 				cubeArray[2].timeKilled = glfwGetTime();
+				SoundEngine->play2D("audio/boing.wav", GL_FALSE);
 				score += 100;
 			}
 		}
 		
 		//END PICKING
 		
-		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClearColor(0.1f, 0.1f, 0.2f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		std::ostringstream scoreText;
@@ -372,7 +438,7 @@ int main()
 		}
 		else
 		{
-			do_movement();
+			//do_movement();
 
 			GLfloat currentFrame = glfwGetTime();
 			deltaTime = currentFrame - lastFrame;
@@ -442,16 +508,22 @@ int main()
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 			glBindVertexArray(0);
 
-			//draw laser
-			//laserShader.use();
-			//glBindVertexArray(laserVAO);
-			//std::cout << "Bind array" << glGetError() << std::endl;
-			//glDrawArrays(GL_LINES, 0, 2);
-			//std::cout << "Draw" << glGetError() << std::endl;
+
+			triangleShader.use();
+			glBindVertexArray(crosshair1VAO);
+			glDrawArrays(GL_TRIANGLES, 0, 3);
+
+			triangleShader.use();
+			glBindVertexArray(crosshair2VAO);
+			glDrawArrays(GL_TRIANGLES, 0, 3);
+
+			triangleShader.use();
+			glBindVertexArray(crosshair3VAO);
+			glDrawArrays(GL_TRIANGLES, 0, 3);
 
 			if (mouseButton)
 			{
-				laserShader.use();
+				triangleShader.use();
 				glBindVertexArray(laserVAO);
 				glDrawArrays(GL_TRIANGLES, 0, 3);
 			}
@@ -497,54 +569,18 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 	camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-{
-	camera.ProcessMouseScroll(yoffset);
-}
-
-void click_callback(GLFWwindow* window, int button, int action, int mods, Shader &pickingShader)
-{
-	
-}
-
-void do_movement()
-{
-	// Camera controls
-	if (keys[GLFW_KEY_W])
-		camera.ProcessKeyboard(FORWARD, deltaTime);
-	if (keys[GLFW_KEY_S])
-		camera.ProcessKeyboard(BACKWARD, deltaTime);
-	if (keys[GLFW_KEY_A])
-		camera.ProcessKeyboard(LEFT, deltaTime);
-	if (keys[GLFW_KEY_D])
-		camera.ProcessKeyboard(RIGHT, deltaTime);
-}
-
-void drawHUD()
-{
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glTranslatef(0, 0, 0);
-	glOrtho(0.0, WIDTH, HEIGHT, 0.0, -1.0, 1.0);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
-	glDisable(GL_CULL_FACE);
-
-	glClear(GL_DEPTH_BUFFER_BIT);
-
-	glBegin(GL_QUADS);
-	glColor3f(255.0f, 255.0f, 255.0f);
-	glVertex2f(0.0, 0.0);
-	glVertex2f(10.0, 0.0);
-	glVertex2f(10.0, 10.0);
-	glVertex2f(0.0, 10.0);
-	glEnd();
-
-	//switch back to 3D rendering
-	glMatrixMode(GL_PROJECTION);
-	glMatrixMode(GL_MODELVIEW);
-}
+//void do_movement()
+//{
+//	// Camera controls
+//	if (keys[GLFW_KEY_W])
+//		camera.ProcessKeyboard(FORWARD, deltaTime);
+//	if (keys[GLFW_KEY_S])
+//		camera.ProcessKeyboard(BACKWARD, deltaTime);
+//	if (keys[GLFW_KEY_A])
+//		camera.ProcessKeyboard(LEFT, deltaTime);
+//	if (keys[GLFW_KEY_D])
+//		camera.ProcessKeyboard(RIGHT, deltaTime);
+//}
 
 //learnopengl.com code
 void loadFont()
@@ -643,152 +679,243 @@ void renderText(Shader &s, std::string text, GLfloat x, GLfloat y, GLfloat scale
 
 void calculateMovement(Cube &current, int i)
 {
-	//calculate movement
-	switch (waypoint)
+	//find cube by ID
+	switch (i)
 	{
+	case 0:
+		switch (current.waypoint)
+		{
+		case 1:
+			//WAYPOINT 1
+			if (current.cubePos.x > -4.0f && current.cubePos.z < -7.0f)
+			{
+				//z needs to be double x
+				current.cubePos.x -= 0.005f;
+				current.cubePos.z += 0.01f;
+			}
+			else
+			{
+				current.waypoint = 2;
+				logFile << "CUBE 1 WAYPOINT 2" << std::endl;
+				SoundEngine->play2D("audio/jet.wav", GL_FALSE);
+			}
+			break;
+		case 2:
+			//WAYPOINT 2
+			if (current.cubePos.x < -2.0f && current.cubePos.z < 13.0f)
+			{
+				//z is ten times x
+				current.cubePos.x += 0.0025f;
+				current.cubePos.z += 0.025f;
+			}
+			else
+			{
+				//shoot!
+				current.waypoint = 3;
+				playerHealth -= 5;
+				SoundEngine->play2D("audio/laser.wav", GL_FALSE);
+				logFile << "CUBE 1 WAYPOINT 3" << std::endl;
+			}
+			break;
+		case 3:
+			//waypoint 4
+			if (current.cubePos.x < 2.0f)
+			{
+				//x moves +4
+				current.cubePos.x += 0.005f;
+			}
+			else
+			{
+				current.waypoint = 4;
+				logFile << "CUBE 1 WAYPOINT 4" << std::endl;
+			}
+			break;
+		case 4:
+			//waypoint 5
+			if (current.cubePos.x < 6.0f && current.cubePos.z > -3.0f)
+			{
+				//z should be x*4
+				current.cubePos.x += 0.01f;
+				current.cubePos.z -= 0.04f;
+			}
+			else
+			{
+				current.waypoint = 5;
+				logFile << "CUBE 1 WAYPOINT 5" << std::endl;
+			}
+			break;
+		case 5:
+			//waypoint 6
+			if (current.cubePos.x > cubeStartPos[i].x && current.cubePos.z > cubeStartPos[i].z)
+			{
+				//z is double x
+				current.cubePos.x -= 0.004f;
+				current.cubePos.z -= 0.008f;
+			}
+			else
+			{
+				current.waypoint = 1;
+				logFile << "CUBE 1 START" << std::endl;
+				SoundEngine->play2D("audio/jet_flyby1.wav", GL_FALSE);
+			}
+			break;
+		default:
+			logFile << "CUBE 1 MOVEMENT ERROR!" << std::endl;
+		};
+		break;
+		
 	case 1:
-		//WAYPOINT 1
-		if (current.cubePos.x > (cubeStartPos[i].x - -0.5f) && current.cubePos.z < (cubeStartPos[i].z + 1.0f))
+		switch (current.waypoint)
 		{
-			current.cubePos.x -= 0.005f;
-			current.cubePos.z += 0.01f;
-		}
-		else
-		{
-			waypoint = 2;
-			logFile << "WAYPOINT 2" << std::endl;
+		case 1:
+			//WAYPOINT 1
+			if (current.cubePos.z < -7.0f)
+			{
+				//z is 5 times x
+				current.cubePos.z += 0.01f;
+			}
+			else
+			{
+				current.waypoint = 2;
+				logFile << "CUBE 2 WAYPOINT 2" << std::endl;
+			}
+			break;
+		case 2:
+			//WAYPOINT 2
+			//SHOOT!!
+			if (current.cubePos.y < 4.0f && current.cubePos.z < 1.0f)
+			{
+				//y+4 z+8 :: z is double y
+				current.cubePos.y += 0.005f;
+				current.cubePos.z += 0.01f;
+			}
+			else
+			{
+				playerHealth -= 5;
+				SoundEngine->play2D("audio/laser.wav", GL_FALSE);
+				current.waypoint = 3;
+				logFile << "CUBE 2 WAYPOINT 3" << std::endl;
+				
+			}
+			break;
+		case 3:
+			//waypoint 3
+			if (current.cubePos.y > 0.0f && current.cubePos.z < 13.0f)
+			{
+				//y - 4, z + 12 :: z = y*-4
+				current.cubePos.y -= 0.004f;
+				current.cubePos.z += 0.016f;
+			}
+			else
+			{
+				current.waypoint = 4;
+				logFile << "CUBE 2 WAYPOINT 4" << std::endl;
+			}
+			break;
+		case 4:
+			//waypoint 5
+			if (current.cubePos.y > -5.0f && current.cubePos.z > 3.0f)
+			{
+				//y - 5, z - 10 :: z = y*2
+				current.cubePos.y -= 0.01f;
+				current.cubePos.z -= 0.02f;
+			}
+			else
+			{
+				current.waypoint = 5;
+				logFile << "CUBE 2 WAYPOINT 5" << std::endl;
+			}
+			break;
+		case 5:
+			//waypoint 6
+			//BACK TO START
+			if (current.cubePos.y < 0.0f && current.cubePos.z > -17.0f)
+			{
+				//x-2, y+5, z-20
+				current.cubePos.y += 0.005f;
+				current.cubePos.z -= 0.02f;
+			}
+			else
+			{
+				current.waypoint = 1;
+				logFile << "CUBE 2 START" << std::endl;
+				SoundEngine->play2D("audio/jet_flyby1.wav", GL_FALSE);
+			}
+			break;
+		default:
+			logFile << "CUBE 2 MOVEMENT ERROR!" << std::endl;
 		}
 		break;
 	case 2:
-		//WAYPOINT 2
-		if (current.cubePos.z < (cubeStartPos[i].z + 1.0f))
+		switch (current.waypoint)
 		{
-			current.cubePos.z += 0.005f;
-		}
-		else
-		{
-			waypoint = 3;
-			logFile << "WAYPOINT 3" << std::endl;
-		}
-		break;
-	case 3:
-		//WAYPOINT 3
-		//SHOOT!!
-		if (current.cubePos.z < (cubeStartPos[i].z + 3.0f))
-		{
-			current.cubePos.z += 0.005f;
-		}
-		else
-		{
-			//playerHealth -= 5;
-			waypoint = 4;
-			logFile << "WAYPOINT 4" << std::endl;
-		}
-		break;
-	case 4:
-		//waypoint 4
-		if (current.cubePos.x > (cubeStartPos[i].x - 3.25f) && current.cubePos.z < (cubeStartPos[i].z + 7.0f))
-		{
-			current.cubePos.x -= 0.0025f;
-			current.cubePos.z += 0.002f;
-		}
-		else
-		{
-			waypoint = 5;
-			logFile << "WAYPOINT 5" << std::endl;
-		}
-		break;
-	case 5:
-		//waypoint 5
-		if (current.cubePos.x > (cubeStartPos[i].x - 5.75f) && current.cubePos.z < (cubeStartPos[i].z + 14.0f))
-		{
-			current.cubePos.x -= 0.005f;
-			current.cubePos.z += 0.001f;
-		}
-		else
-		{
-			waypoint = 6;
-			logFile << "WAYPOINT 6" << std::endl;
-		}
-		break;
-	case 6:
-		//waypoint 6
-		if (current.cubePos.x < cubeStartPos[i].x && current.cubePos.z < (cubeStartPos[i].z + 17.75f))
-		{
-			current.cubePos.x += 0.0005f;
-			current.cubePos.z += 0.0025f;
-		}
-		else
-		{
-			waypoint = 7;
-			logFile << "WAYPOINT 7" << std::endl;
-		}
-		break;
-	case 7:
-		//waypoint 7
-		if (current.cubePos.x < (cubeStartPos[i].x + 7.4f) && current.cubePos.z >(cubeStartPos[i].z +8.2f))
-		{
-			current.cubePos.x += 0.0005f;
-			current.cubePos.z -= 0.003f;
-		}
-		else
-		{
-			waypoint = 8;
-			logFile << "WAYPOINT 8" << std::endl;
-		}
-		break;
-	case 8:
-		//waypoint 8
-		if (current.cubePos.x < (cubeStartPos[i].x + 8.4f) && current.cubePos.z >(cubeStartPos[i].z - -4.0f))
-		{
-			current.cubePos.x += 0.0005f;
-			current.cubePos.z -= 0.003f;
-		}
-		else
-		{
-			waypoint = 9;
-			logFile << "WAYPOINT 9" << std::endl;
-		}
-		break;
-	case 9:
-		//waypoint 9
-		if (current.cubePos.x < (cubeStartPos[i].x + 4.1f) && current.cubePos.z >(cubeStartPos[i].z - -2.5f))
-		{
-			current.cubePos.x += 0.0005f;
-			current.cubePos.z -= 0.003f;
-		}
-		else
-		{
-			waypoint = 10;
-			logFile << "WAYPOINT 10" << std::endl;
-		}
-		break;
-	case 10:
-		//waypoint 10
-		if (current.cubePos.x > (cubeStartPos[i].x + 1.5f) && current.cubePos.z > cubeStartPos[i].z)
-		{
-			current.cubePos.x -= 0.0005f;
-			current.cubePos.z -= 0.003f;
-		}
-		else
-		{
-			waypoint = 11;
-			logFile << "WAYPOINT 11" << std::endl;
-		}
-		break;
-	case 11:
-		//back to start
-		if (current.cubePos.x > cubeStartPos[i].x)
-		{
-			current.cubePos.x -= 0.0015f;
-		}
-		else
-		{
-			waypoint = 1;
-			logFile << "WAYPOINT 1" << std::endl;
+		case 1:
+			//WAYPOINT 1
+			if (current.cubePos.z < -8.0f)
+			{
+				current.cubePos.z += 0.01f;
+			}
+			else
+			{
+				current.waypoint = 2;
+				logFile << "CUBE 3 WAYPOINT 2" << std::endl;
+			}
+			break;
+		case 2:
+			//WAYPOINT 2
+			if (current.cubePos.x > 1.0f && current.cubePos.z < 19.0f)
+			{
+				//x - 3, z + 27 :: z = x * 9
+				current.cubePos.x -= 0.001f;
+				current.cubePos.z += 0.009f;
+			}
+			else
+			{
+				current.waypoint = 3;
+				//SHOOT
+				playerHealth -= 5;
+				logFile << "CUBE 3 WAYPOINT 3" << std::endl;
+				SoundEngine->play2D("audio/laser.wav", GL_FALSE);
+			}
+			break;
+		case 3:
+			//waypoint 4
+			if (current.cubePos.x > -5.0f && current.cubePos.z > 3.0f)
+			{
+				//x+4, Z-16 :: z = x * -4
+				current.cubePos.x -= 0.002f;
+				current.cubePos.z -= 0.004f;
+			}
+			else
+			{
+				current.waypoint = 4;
+				logFile << "CUBE 3 WAYPOINT 4" << std::endl;
+			}
+			break;
+		case 4:
+			//waypoint 5
+			if (current.cubePos.x < 4.0f && current.cubePos.z > -20.0f)
+			{
+				//x-1, z-23
+				current.cubePos.x += 0.0022f;
+				current.cubePos.z -= 0.0046f;
+			}
+			else
+			{
+				current.waypoint = 1;
+				logFile << "CUBE 3 START" << std::endl;
+				SoundEngine->play2D("audio/jet_flyby1.wav", GL_FALSE);
+			}
+			break;
+		default:
+			//logFile << "CUBE 3 MOVEMENT ERROR!" << std::endl;
+			break;
 		}
 		break;
 	default:
-		logFile << "MOVEMENT ERROR!" << std::endl;
+		//throw some kind of exception
+		logFile << "INVALID CUBE" << std::endl;
+		break;
 	}
+
 }

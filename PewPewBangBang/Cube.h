@@ -9,21 +9,21 @@
 class Cube
 {
 public:
-	Cube(int ID, glm::vec3 startingPos, glm::vec3 colour);
+	Cube(glm::vec3 startingPos, glm::vec3 colour);
 	void draw();
-	int cubeID;
+	int waypoint;
 	glm::vec3 cubePos;
 	glm::vec3 pickingColour;
 	bool alive;
 	double timeKilled;
 };
 
-Cube::Cube(int ID, glm::vec3 startingPos, glm::vec3 colour)
+Cube::Cube(glm::vec3 startingPos, glm::vec3 colour)
 {
-	cubeID = ID;
 	cubePos = startingPos;
 	pickingColour = colour;
 	alive = true;
 	timeKilled = 0.0;
+	waypoint = 1;
 }
 #endif

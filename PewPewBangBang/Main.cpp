@@ -10,6 +10,8 @@
 #include FT_FREETYPE_H
 //IRRKLANG
 #include <irrklang\irrKlang.h>
+//SOIL
+#include <SOIL.h>
 //LOCAL
 #include "Camera.h"
 #include "Shader.h"
@@ -84,7 +86,7 @@ std::ofstream logFile;
 
 //movement
 int score = 0;
-
+ 
 int playerHealth = 100;
 
 ISoundEngine *SoundEngine = createIrrKlangDevice();
@@ -145,48 +147,50 @@ int main()
 	//load the font
 	loadFont();
 
+
 	GLfloat vertices[] = {
-		-0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
-		0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
-		0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
-		0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
-		-0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
-		-0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
+		// Positions           // Normals           // Texture Coords
+		-0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
+		0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f,
+		0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,
+		0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,
+		-0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
 
-		-0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
-		0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
-		0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
-		0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
-		-0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
-		-0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
+		-0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+		0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
+		0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+		0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+		-0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
+		-0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
 
-		-0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f,
-		-0.5f, 0.5f, -0.5f, -1.0f, 0.0f, 0.0f,
-		-0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f,
-		-0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f,
-		-0.5f, -0.5f, 0.5f, -1.0f, 0.0f, 0.0f,
-		-0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f,
+		-0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+		-0.5f, 0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+		-0.5f, -0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+		-0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
 
-		0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f,
-		0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f,
-		0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f,
-		0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f,
-		0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f,
-		0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f,
+		0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+		0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+		0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+		0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+		0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+		0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
 
-		-0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f,
-		0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f,
-		0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f,
-		0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f,
-		-0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f,
-		-0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f,
+		0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f,
+		0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+		0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+		-0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f,
 
-		-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-		0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-		0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f,
-		0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f,
-		-0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f,
-		-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f
+		-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+		0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+		0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+		0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+		-0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f
 	};
 
 
@@ -220,22 +224,55 @@ int main()
 	};
 
 	//open logfile
-	logFile.open("log.txt", std::ofstream::app);
+	logFile.open("debuglog.txt", std::ofstream::app);
 
 	GLuint VBO, containerVAO;
 	glGenVertexArrays(1, &containerVAO);
-	glBindVertexArray(containerVAO);
 	glGenBuffers(1, &VBO);
+	glBindVertexArray(containerVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 	//position attributes of cube
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GL_FLOAT), (GLvoid*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
 	//normal attributes
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(1);
+	//texture attributes
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(2);
 	glBindVertexArray(0);
 
+	GLuint texture;
+	GLuint specMap;
+	glGenTextures(1, &texture);
+	int width, height;
+	unsigned char* image = SOIL_load_image("media/cube.png", &width, &height, 0, SOIL_LOAD_RGB);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	SOIL_free_image_data(image);
+
+	//set parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	//specular map
+	glGenTextures(1, &specMap);
+	glBindTexture(GL_TEXTURE_2D, specMap);
+	image = SOIL_load_image("media/cube_specular.png", &width, &height, 0, SOIL_LOAD_RGB);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+	SOIL_free_image_data(image);
+	glBindTexture(GL_TEXTURE_2D, 0);
+		
 	GLuint lightVAO;
 
 	glGenVertexArrays(1, &lightVAO);
@@ -317,7 +354,11 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
-	SoundEngine->play2D("audio/ambientloop.mp3", GL_TRUE);
+	lightShader.use();
+	glUniform1i(glGetUniformLocation(lightShader.Program, "material.diffuse"), 0);
+	glUniform1i(glGetUniformLocation(lightShader.Program, "material.specular"), 1);
+
+	SoundEngine->play2D("media/ambientloop.mp3", GL_TRUE);
 
 	//game loop
 	while (!glfwWindowShouldClose(window))
@@ -383,7 +424,7 @@ int main()
 		if (mouseButton)
 		{
 			//laser sound
-			SoundEngine->play2D("audio/phasers.wav", GL_FALSE);
+			SoundEngine->play2D("media/phasers.wav", GL_FALSE);
 
 			//read the pixel at the centre of the screen
 			unsigned char data[4];
@@ -400,21 +441,21 @@ int main()
 			{
 				cubeArray[0].alive = false;
 				cubeArray[0].timeKilled = glfwGetTime();
-				SoundEngine->play2D("audio/boing.wav", GL_FALSE);
+				SoundEngine->play2D("media/boing.wav", GL_FALSE);
 				score += 100;
 			}
 			else if (pickedID == 0x00ff0000)
 			{
 				cubeArray[1].alive = false;
 				cubeArray[1].timeKilled = glfwGetTime();
-				SoundEngine->play2D("audio/boing.wav", GL_FALSE);
+				SoundEngine->play2D("media/boing.wav", GL_FALSE);
 				score += 100;
 			}
 			else if (pickedID == 0x000000ff)
 			{
 				cubeArray[2].alive = false;
 				cubeArray[2].timeKilled = glfwGetTime();
-				SoundEngine->play2D("audio/boing.wav", GL_FALSE);
+				SoundEngine->play2D("media/boing.wav", GL_FALSE);
 				score += 100;
 			}
 		}
@@ -452,14 +493,21 @@ int main()
 		
 			//set uniforms and draw objects
 			lightShader.use();
-			GLint objectColorLoc = glGetUniformLocation(lightShader.Program, "objectColor");
-			GLint lightColorLoc = glGetUniformLocation(lightShader.Program, "lightColor");
+			GLint matSpecularLoc = glGetUniformLocation(lightShader.Program, "material.specular");
+			GLint matShineLoc = glGetUniformLocation(lightShader.Program, "material.shininess");
+			GLint lightAmbientLoc = glGetUniformLocation(lightShader.Program, "light.ambient");
+			GLint lightDiffuseLoc = glGetUniformLocation(lightShader.Program, "light.diffuse");
+			GLint lightSpecularLoc = glGetUniformLocation(lightShader.Program, "light.specular");
 			GLint lightPosLoc = glGetUniformLocation(lightShader.Program, "lightPos");
 			GLint viewPosLoc = glGetUniformLocation(lightShader.Program, "viewPos");
+			glUniform3f(matSpecularLoc, 0.5f, 0.5f, 0.5f);
+			glUniform3f(lightAmbientLoc, 0.2f, 0.2f, 0.2f);
+			glUniform3f(lightDiffuseLoc, 0.5f, 0.5f, 0.5f);
+			glUniform3f(lightSpecularLoc, 1.0f, 1.0f, 1.0f);
+			glUniform1f(matShineLoc, 64.0f);
 			glUniform3f(viewPosLoc, camera.Position.x, camera.Position.y, camera.Position.z);
 			glUniform3f(lightPosLoc, lightPos.x, lightPos.y, lightPos.z);
-			glUniform3f(objectColorLoc, 1.0f, 0.5f, 0.31f);
-			glUniform3f(lightColorLoc, 1.0f, 1.0f, 1.0f);
+
 
 			//camera transformations
 			glm::mat4 view;
@@ -478,6 +526,11 @@ int main()
 				if (cubeArray[i].alive)
 				{
 					//draw container
+					glActiveTexture(GL_TEXTURE0);
+					glBindTexture(GL_TEXTURE_2D, texture);
+					glActiveTexture(GL_TEXTURE1);
+					glBindTexture(GL_TEXTURE_2D, specMap);
+
 					glBindVertexArray(containerVAO);
 					glm::mat4 cubemodel;
 					cubemodel = glm::mat4();
@@ -508,7 +561,7 @@ int main()
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 			glBindVertexArray(0);
 
-
+			//draw crosshair
 			triangleShader.use();
 			glBindVertexArray(crosshair1VAO);
 			glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -697,7 +750,7 @@ void calculateMovement(Cube &current, int i)
 			{
 				current.waypoint = 2;
 				logFile << "CUBE 1 WAYPOINT 2" << std::endl;
-				SoundEngine->play2D("audio/jet.wav", GL_FALSE);
+				SoundEngine->play2D("media/jet.wav", GL_FALSE);
 			}
 			break;
 		case 2:
@@ -713,7 +766,7 @@ void calculateMovement(Cube &current, int i)
 				//shoot!
 				current.waypoint = 3;
 				playerHealth -= 5;
-				SoundEngine->play2D("audio/laser.wav", GL_FALSE);
+				SoundEngine->play2D("media/laser.wav", GL_FALSE);
 				logFile << "CUBE 1 WAYPOINT 3" << std::endl;
 			}
 			break;
@@ -756,7 +809,7 @@ void calculateMovement(Cube &current, int i)
 			{
 				current.waypoint = 1;
 				logFile << "CUBE 1 START" << std::endl;
-				SoundEngine->play2D("audio/jet_flyby1.wav", GL_FALSE);
+				SoundEngine->play2D("media/jet_flyby1.wav", GL_FALSE);
 			}
 			break;
 		default:
@@ -792,7 +845,7 @@ void calculateMovement(Cube &current, int i)
 			else
 			{
 				playerHealth -= 5;
-				SoundEngine->play2D("audio/laser.wav", GL_FALSE);
+				SoundEngine->play2D("media/laser.wav", GL_FALSE);
 				current.waypoint = 3;
 				logFile << "CUBE 2 WAYPOINT 3" << std::endl;
 				
@@ -839,7 +892,7 @@ void calculateMovement(Cube &current, int i)
 			{
 				current.waypoint = 1;
 				logFile << "CUBE 2 START" << std::endl;
-				SoundEngine->play2D("audio/jet_flyby1.wav", GL_FALSE);
+				SoundEngine->play2D("media/jet_flyby1.wav", GL_FALSE);
 			}
 			break;
 		default:
@@ -875,7 +928,7 @@ void calculateMovement(Cube &current, int i)
 				//SHOOT
 				playerHealth -= 5;
 				logFile << "CUBE 3 WAYPOINT 3" << std::endl;
-				SoundEngine->play2D("audio/laser.wav", GL_FALSE);
+				SoundEngine->play2D("media/laser.wav", GL_FALSE);
 			}
 			break;
 		case 3:
@@ -904,7 +957,7 @@ void calculateMovement(Cube &current, int i)
 			{
 				current.waypoint = 1;
 				logFile << "CUBE 3 START" << std::endl;
-				SoundEngine->play2D("audio/jet_flyby1.wav", GL_FALSE);
+				SoundEngine->play2D("media/jet_flyby1.wav", GL_FALSE);
 			}
 			break;
 		default:

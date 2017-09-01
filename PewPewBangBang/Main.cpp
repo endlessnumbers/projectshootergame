@@ -14,6 +14,7 @@
 #include "Shader.h"
 #include "Cube.h"
 #include "Font.h"
+#include "Crosshair.h"
 //C++ STANDARD
 #include <iostream>
 #include <sstream>
@@ -42,10 +43,6 @@ Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
 //light vector
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
-
-
-//open log file for debugging output
-std::ofstream logFile;
 
 const GLuint WIDTH = 800, HEIGHT = 600;
 
@@ -171,6 +168,8 @@ int main()
 
 	//FONT
 	Font uiFont;
+	//CROSSHAIR
+	Crosshair crosshair;
 
 	GLfloat laserVerts[] = {
 		// positions         // colors
@@ -178,31 +177,6 @@ int main()
 		-0.03f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f,   // bottom left
 		0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f    // top 
 	};
-
-	//left
-	GLfloat crosshair1[] = {
-		// positions         // colors
-		0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,   // bottom right
-		-0.02f, 0.01f, 0.0f, 1.0f, 0.0f, 0.0f,   // bottom left
-		-0.01f, 0.03f, 0.0f, 1.0f, 0.0f, 0.0f    // top 
-	};
-	//bottom
-	GLfloat crosshair2[] = {
-		// positions         // colors
-		0.01f, -0.02f, 0.0f, 1.0f, 0.0f, 0.0f,   // bottom right
-		-0.01f, -0.02f, 0.0f, 1.0f, 0.0f, 0.0f,   // bottom left
-		0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f    // top 
-	};
-	//right
-	GLfloat crosshair3[] = {
-		// positions         // colors
-		0.02f, 0.01f, 0.0f, 1.0f, 0.0f, 0.0f,   // bottom right
-		0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,   // bottom left
-		0.01f, 0.03f, 0.0f, 1.0f, 0.0f, 0.0f    // top 
-	};
-
-	//open logfile
-	logFile.open("debuglog.txt", std::ofstream::app);
 
 	GLuint VBO, containerVAO;
 	glGenVertexArrays(1, &containerVAO);
@@ -268,51 +242,6 @@ int main()
 	glBindVertexArray(laserVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, laserVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(laserVerts), laserVerts, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
-	glEnableVertexAttribArray(0);
-	//colour
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-
-	//crosshair
-	GLuint crosshair1VAO, crosshair1VBO;
-	glGenVertexArrays(1, &crosshair1VAO);
-	glGenBuffers(1, &crosshair1VBO);
-	glBindVertexArray(crosshair1VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, crosshair1VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(crosshair1), crosshair1, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
-	glEnableVertexAttribArray(0);
-	//colour
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-
-	//crosshair
-	GLuint crosshair2VAO, crosshair2VBO;
-	glGenVertexArrays(1, &crosshair2VAO);
-	glGenBuffers(1, &crosshair2VBO);
-	glBindVertexArray(crosshair2VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, crosshair2VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(crosshair2), crosshair2, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
-	glEnableVertexAttribArray(0);
-	//colour
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-
-	//crosshair
-	GLuint crosshair3VAO, crosshair3VBO;
-	glGenVertexArrays(1, &crosshair3VAO);
-	glGenBuffers(1, &crosshair3VBO);
-	glBindVertexArray(crosshair3VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, crosshair3VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(crosshair3), crosshair3, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
 	//colour
@@ -404,8 +333,6 @@ int main()
 				data[0] +
 				data[1] * 256 +
 				data[2] * 256 * 256;
-
-			std::cout << pickedID << std::endl;
 
 			if (pickedID == 0x0000ff00)
 			{
@@ -531,18 +458,8 @@ int main()
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 			glBindVertexArray(0);
 
-			//draw crosshair
-			triangleShader.use();
-			glBindVertexArray(crosshair1VAO);
-			glDrawArrays(GL_TRIANGLES, 0, 3);
+			crosshair.draw(triangleShader);
 
-			triangleShader.use();
-			glBindVertexArray(crosshair2VAO);
-			glDrawArrays(GL_TRIANGLES, 0, 3);
-
-			triangleShader.use();
-			glBindVertexArray(crosshair3VAO);
-			glDrawArrays(GL_TRIANGLES, 0, 3);
 
 			if (mouseButton)
 			{
@@ -556,7 +473,6 @@ int main()
 	}
 
 	glfwTerminate();
-	logFile.close();
 	return 0;
 }
 
@@ -593,10 +509,6 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 	camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
-
-//learnopengl.com code
-
-
 void calculateMovement(Cube &current, int i)
 {
 	//find cube by ID
@@ -616,7 +528,6 @@ void calculateMovement(Cube &current, int i)
 			else
 			{
 				current.waypoint = 2;
-				logFile << "CUBE 1 WAYPOINT 2" << std::endl;
 				SoundEngine->play2D("media/jet.wav", GL_FALSE);
 			}
 			break;
@@ -634,7 +545,6 @@ void calculateMovement(Cube &current, int i)
 				current.waypoint = 3;
 				playerHealth -= 5;
 				SoundEngine->play2D("media/laser.wav", GL_FALSE);
-				logFile << "CUBE 1 WAYPOINT 3" << std::endl;
 			}
 			break;
 		case 3:
@@ -647,7 +557,6 @@ void calculateMovement(Cube &current, int i)
 			else
 			{
 				current.waypoint = 4;
-				logFile << "CUBE 1 WAYPOINT 4" << std::endl;
 			}
 			break;
 		case 4:
@@ -661,7 +570,6 @@ void calculateMovement(Cube &current, int i)
 			else
 			{
 				current.waypoint = 5;
-				logFile << "CUBE 1 WAYPOINT 5" << std::endl;
 			}
 			break;
 		case 5:
@@ -675,12 +583,11 @@ void calculateMovement(Cube &current, int i)
 			else
 			{
 				current.waypoint = 1;
-				logFile << "CUBE 1 START" << std::endl;
 				SoundEngine->play2D("media/jet_flyby1.wav", GL_FALSE);
 			}
 			break;
 		default:
-			logFile << "CUBE 1 MOVEMENT ERROR!" << std::endl;
+			std::cout << "CUBE ONE MOVEMENT ERROR" << std::endl;
 		};
 		break;
 		
@@ -697,7 +604,6 @@ void calculateMovement(Cube &current, int i)
 			else
 			{
 				current.waypoint = 2;
-				logFile << "CUBE 2 WAYPOINT 2" << std::endl;
 			}
 			break;
 		case 2:
@@ -714,8 +620,6 @@ void calculateMovement(Cube &current, int i)
 				playerHealth -= 5;
 				SoundEngine->play2D("media/laser.wav", GL_FALSE);
 				current.waypoint = 3;
-				logFile << "CUBE 2 WAYPOINT 3" << std::endl;
-				
 			}
 			break;
 		case 3:
@@ -729,7 +633,6 @@ void calculateMovement(Cube &current, int i)
 			else
 			{
 				current.waypoint = 4;
-				logFile << "CUBE 2 WAYPOINT 4" << std::endl;
 			}
 			break;
 		case 4:
@@ -743,7 +646,6 @@ void calculateMovement(Cube &current, int i)
 			else
 			{
 				current.waypoint = 5;
-				logFile << "CUBE 2 WAYPOINT 5" << std::endl;
 			}
 			break;
 		case 5:
@@ -758,12 +660,11 @@ void calculateMovement(Cube &current, int i)
 			else
 			{
 				current.waypoint = 1;
-				logFile << "CUBE 2 START" << std::endl;
 				SoundEngine->play2D("media/jet_flyby1.wav", GL_FALSE);
 			}
 			break;
 		default:
-			logFile << "CUBE 2 MOVEMENT ERROR!" << std::endl;
+			std::cout << "CUBE 2 MOVEMENT ERROR!" << std::endl;
 		}
 		break;
 	case 2:
@@ -778,7 +679,6 @@ void calculateMovement(Cube &current, int i)
 			else
 			{
 				current.waypoint = 2;
-				logFile << "CUBE 3 WAYPOINT 2" << std::endl;
 			}
 			break;
 		case 2:
@@ -794,7 +694,6 @@ void calculateMovement(Cube &current, int i)
 				current.waypoint = 3;
 				//SHOOT
 				playerHealth -= 5;
-				logFile << "CUBE 3 WAYPOINT 3" << std::endl;
 				SoundEngine->play2D("media/laser.wav", GL_FALSE);
 			}
 			break;
@@ -809,7 +708,6 @@ void calculateMovement(Cube &current, int i)
 			else
 			{
 				current.waypoint = 4;
-				logFile << "CUBE 3 WAYPOINT 4" << std::endl;
 			}
 			break;
 		case 4:
@@ -823,18 +721,16 @@ void calculateMovement(Cube &current, int i)
 			else
 			{
 				current.waypoint = 1;
-				logFile << "CUBE 3 START" << std::endl;
 				SoundEngine->play2D("media/jet_flyby1.wav", GL_FALSE);
 			}
 			break;
 		default:
-			//logFile << "CUBE 3 MOVEMENT ERROR!" << std::endl;
+			std::cout << "CUBE 3 MOVEMENT ERROR!" << std::endl;
 			break;
 		}
 		break;
 	default:
-		//throw some kind of exception
-		logFile << "INVALID CUBE" << std::endl;
+		std::cout << "INVALID CUBE" << std::endl;
 		break;
 	}
 

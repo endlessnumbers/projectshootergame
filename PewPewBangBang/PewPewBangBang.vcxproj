@@ -73,6 +73,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Crosshair.cpp" />
     <ClCompile Include="Cube.cpp" />
     <ClCompile Include="Font.cpp" />
     <ClCompile Include="Main.cpp" />
@@ -80,6 +81,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Crosshair.h" />
     <ClInclude Include="Cube.h" />
     <ClInclude Include="Font.h" />
     <ClInclude Include="Shader.h" />

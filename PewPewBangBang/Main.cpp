@@ -193,7 +193,6 @@ int main()
 		-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f
 	};
 
-
 	GLfloat laserVerts[] = {
 		// positions         // colors
 		0.03f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f,   // bottom right
@@ -243,12 +242,12 @@ int main()
 	glEnableVertexAttribArray(2);
 	glBindVertexArray(0);
 
-	GLuint texture;
+	GLuint cubetexture;
 	GLuint specMap;
-	glGenTextures(1, &texture);
+	glGenTextures(1, &cubetexture);
 	int width, height;
 	unsigned char* image = SOIL_load_image("media/cube.png", &width, &height, 0, SOIL_LOAD_RGB);
-	glBindTexture(GL_TEXTURE_2D, texture);
+	glBindTexture(GL_TEXTURE_2D, cubetexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
 	glGenerateMipmap(GL_TEXTURE_2D);
 	SOIL_free_image_data(image);
@@ -264,6 +263,7 @@ int main()
 	glGenTextures(1, &specMap);
 	glBindTexture(GL_TEXTURE_2D, specMap);
 	image = SOIL_load_image("media/cube_specular.png", &width, &height, 0, SOIL_LOAD_RGB);
+	
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
 	glGenerateMipmap(GL_TEXTURE_2D);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -272,16 +272,17 @@ int main()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_NEAREST);
 	SOIL_free_image_data(image);
 	glBindTexture(GL_TEXTURE_2D, 0);
-		
+
 	GLuint lightVAO;
 
 	glGenVertexArrays(1, &lightVAO);
 	glBindVertexArray(lightVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	//lamp - same shape as the other cube!
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GL_FLOAT), (GLvoid*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GL_FLOAT), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
 	glBindVertexArray(0);
+
 
 	//VAO/VBOs for texture quads
 	glGenVertexArrays(1, &fontVAO);
@@ -357,6 +358,9 @@ int main()
 	lightShader.use();
 	glUniform1i(glGetUniformLocation(lightShader.Program, "material.diffuse"), 0);
 	glUniform1i(glGetUniformLocation(lightShader.Program, "material.specular"), 1);
+
+	lampShader.use();
+	glUniform1i(glGetUniformLocation(lampShader.Program, "ourTexture"), 0);
 
 	SoundEngine->play2D("media/ambientloop.mp3", GL_TRUE);
 
@@ -462,7 +466,7 @@ int main()
 		
 		//END PICKING
 		
-		glClearColor(0.1f, 0.1f, 0.2f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		std::ostringstream scoreText;
@@ -472,7 +476,7 @@ int main()
 		if (playerHealth <= 0)
 		{
 			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-			renderText(fontShader, "Game Over!", 30.0f, 300.0f, 2.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+			renderText(fontShader, "Game Over!", 30.0f, 300.0f, 1.5f, glm::vec3(1.0f, 0.0f, 0.0f));
 			renderText(fontShader, "Press Esc to Exit", 30.0f, 100.0f, 1.0f, glm::vec3(1.0f, 0.0f, 0.0f));
 			renderText(fontShader, scoreText.str(), 30.0f, 20.0f, 0.7f, glm::vec3(1.0f, 0.0f, 0.0f));
 			glfwSwapBuffers(window);
@@ -489,7 +493,7 @@ int main()
 			healthText << "Health: " << playerHealth;
 
 			renderText(fontShader, healthText.str(), 25.0f, 25.0f, 1.0f, glm::vec3(0.5f, 0.8f, 0.2f));
-			renderText(fontShader, scoreText.str(), 540.0f, 570.0f, 0.5f, glm::vec3(0.3f, 0.7f, 0.9f));
+			renderText(fontShader, scoreText.str(), 540.0f, 570.0f, 0.7f, glm::vec3(0.3f, 0.7f, 0.9f));
 		
 			//set uniforms and draw objects
 			lightShader.use();
@@ -501,10 +505,10 @@ int main()
 			GLint lightPosLoc = glGetUniformLocation(lightShader.Program, "lightPos");
 			GLint viewPosLoc = glGetUniformLocation(lightShader.Program, "viewPos");
 			glUniform3f(matSpecularLoc, 0.5f, 0.5f, 0.5f);
-			glUniform3f(lightAmbientLoc, 0.2f, 0.2f, 0.2f);
-			glUniform3f(lightDiffuseLoc, 0.5f, 0.5f, 0.5f);
+			glUniform3f(lightAmbientLoc, 0.4f, 0.4f, 0.4f);
+			glUniform3f(lightDiffuseLoc, 0.7f, 0.7f, 0.7f);
 			glUniform3f(lightSpecularLoc, 1.0f, 1.0f, 1.0f);
-			glUniform1f(matShineLoc, 64.0f);
+			glUniform1f(matShineLoc, 75.0f);
 			glUniform3f(viewPosLoc, camera.Position.x, camera.Position.y, camera.Position.z);
 			glUniform3f(lightPosLoc, lightPos.x, lightPos.y, lightPos.z);
 
@@ -527,7 +531,7 @@ int main()
 				{
 					//draw container
 					glActiveTexture(GL_TEXTURE0);
-					glBindTexture(GL_TEXTURE_2D, texture);
+					glBindTexture(GL_TEXTURE_2D, cubetexture);
 					glActiveTexture(GL_TEXTURE1);
 					glBindTexture(GL_TEXTURE_2D, specMap);
 
@@ -643,7 +647,7 @@ void loadFont()
 	if (FT_Init_FreeType(&ft))
 		std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
 	FT_Face face;
-	if (FT_New_Face(ft, "fonts/arial.ttf", 0, &face))
+	if (FT_New_Face(ft, "fonts/segoeui.ttf", 0, &face))
 		std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
 
 	//define font size

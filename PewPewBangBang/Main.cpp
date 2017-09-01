@@ -15,6 +15,7 @@
 #include "Cube.h"
 #include "Font.h"
 #include "Crosshair.h"
+#include "Laser.h"
 //C++ STANDARD
 #include <iostream>
 #include <sstream>
@@ -63,7 +64,7 @@ Cube cubeArray[] = {
 
 //movement
 int score = 0;
- 
+
 int playerHealth = 100;
 
 ISoundEngine *SoundEngine = createIrrKlangDevice();
@@ -170,13 +171,8 @@ int main()
 	Font uiFont;
 	//CROSSHAIR
 	Crosshair crosshair;
-
-	GLfloat laserVerts[] = {
-		// positions         // colors
-		0.03f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f,   // bottom right
-		-0.03f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f,   // bottom left
-		0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f    // top 
-	};
+	//LASER
+	Laser laser;
 
 	GLuint VBO, containerVAO;
 	glGenVertexArrays(1, &containerVAO);
@@ -233,21 +229,6 @@ int main()
 	//lamp - same shape as the other cube!
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GL_FLOAT), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
-	glBindVertexArray(0);
-
-	//laser
-	GLuint laserVAO, laserVBO;
-	glGenVertexArrays(1, &laserVAO);
-	glGenBuffers(1, &laserVBO);
-	glBindVertexArray(laserVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, laserVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(laserVerts), laserVerts, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
-	glEnableVertexAttribArray(0);
-	//colour
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
 	lightShader.use();
@@ -463,9 +444,7 @@ int main()
 
 			if (mouseButton)
 			{
-				triangleShader.use();
-				glBindVertexArray(laserVAO);
-				glDrawArrays(GL_TRIANGLES, 0, 3);
+				laser.draw(triangleShader);
 			}
 
 			glfwSwapBuffers(window);
@@ -590,7 +569,7 @@ void calculateMovement(Cube &current, int i)
 			std::cout << "CUBE ONE MOVEMENT ERROR" << std::endl;
 		};
 		break;
-		
+
 	case 1:
 		switch (current.waypoint)
 		{
@@ -735,3 +714,4 @@ void calculateMovement(Cube &current, int i)
 	}
 
 }
+

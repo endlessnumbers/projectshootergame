@@ -5,9 +5,6 @@
 #include <glm\glm.hpp>
 #include <glm\gtc\matrix_transform.hpp>
 #include <glm\gtc\type_ptr.hpp>
-//FREETYPE
-#include <ft2build.h>
-#include FT_FREETYPE_H
 //IRRKLANG
 #include <irrklang\irrKlang.h>
 //SOIL
@@ -16,6 +13,7 @@
 #include "Camera.h"
 #include "Shader.h"
 #include "Cube.h"
+#include "Font.h"
 //C++ STANDARD
 #include <iostream>
 #include <sstream>
@@ -26,48 +24,33 @@
 using namespace irrklang;
 
 // Function prototypes
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void click_callback(GLFWwindow* window, int button, int action, int mods);
-void do_movement();
 void drawHUD();
-void loadFont();
-void renderText(Shader &s, std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 colour);
 void gameOver();
 void calculateMovement(Cube &current, int i);
 void drawLaser();
 void drawCrosshair(Shader &shader, GLuint VAO);
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 
-// Window dimensions
-const GLuint WIDTH = 800, HEIGHT = 600;
-
-//Struct to store generated data for each character loaded
-struct Character{
-	GLuint textureID;
-	glm::ivec2 size;	//size of glyph
-	glm::ivec2 bearing;	//offset from baseline to top of glyph
-	GLuint advance;		//offset to advance to next glyph
-};
-
-
-std::map<GLchar, Character> charMap;	//map stores key-value pairs; stores character data
-//these should be moved later!
-GLuint fontVAO;
-GLuint fontVBO;
-
-bool keys[1024];
 GLfloat deltaTime = 0.0f;	//time between current frame and last frame
 GLfloat lastFrame = 0.0f;	//time of last frame
 
+bool keys[1024];
+
+//create camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
-GLfloat lastX = WIDTH / 2.0;
-GLfloat lastY = HEIGHT / 2.0;
 
 //light vector
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
-//cube vector
-//glm::vec3 cubePos(0.0f, 0.0f, -7.2f);
 
+
+//open log file for debugging output
+std::ofstream logFile;
+
+const GLuint WIDTH = 800, HEIGHT = 600;
+
+GLfloat lastX = WIDTH / 2.0;
+GLfloat lastY = HEIGHT / 2.0;
 //CREATE CUBES
 const glm::vec3 cubeStartPos[] = {
 	glm::vec3(0.0f, 0.0f, -15.0f),
@@ -80,9 +63,6 @@ Cube cubeArray[] = {
 	Cube(cubeStartPos[1], glm::vec3(0.0f, 0.0f, 1.0f)),	//blue
 	Cube(cubeStartPos[2], glm::vec3(1.0f, 0.0f, 0.0f))	//red
 };
-
-//open log file for debugging output
-std::ofstream logFile;
 
 //movement
 int score = 0;
@@ -126,27 +106,6 @@ int main()
 	//enable blending
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	//setup shaders
-	Shader lightShader("Shaders/light.vs", "Shaders/light.frag");
-	Shader lampShader("Shaders/lamp.vs", "Shaders/lamp.frag");
-	Shader fontShader("Shaders/font.vs", "Shaders/font.frag");
-	Shader pickingShader("Shaders/picking.vs", "Shaders/picking.frag");
-	Shader particleShader("Shaders/particle.vs", "Shaders/particle.frag");
-	Shader triangleShader("Shaders/triangle.vs", "Shaders/triangle.frag");
-
-	camera.MouseSensitivity = 0.05f;
-
-	//prepare font shaders
-	glm::mat4 fontProjection = glm::ortho(0.0f, static_cast<GLfloat>(WIDTH), 0.0f,
-		static_cast<GLfloat>(HEIGHT));
-	fontShader.use();
-	glUniformMatrix4fv(glGetUniformLocation(fontShader.Program, "projection"), 1, GL_FALSE,
-		glm::value_ptr(fontProjection));
-
-	//load the font
-	loadFont();
-
 
 	GLfloat vertices[] = {
 		// Positions           // Normals           // Texture Coords
@@ -192,6 +151,26 @@ int main()
 		-0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
 		-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f
 	};
+
+	//setup shaders
+	Shader lightShader("Shaders/light.vs", "Shaders/light.frag");
+	Shader lampShader("Shaders/lamp.vs", "Shaders/lamp.frag");
+	Shader fontShader("Shaders/font.vs", "Shaders/font.frag");
+	Shader pickingShader("Shaders/picking.vs", "Shaders/picking.frag");
+	Shader particleShader("Shaders/particle.vs", "Shaders/particle.frag");
+	Shader triangleShader("Shaders/triangle.vs", "Shaders/triangle.frag");
+
+	camera.MouseSensitivity = 0.05f;
+
+	//prepare font shaders
+	glm::mat4 fontProjection = glm::ortho(0.0f, static_cast<GLfloat>(WIDTH), 0.0f,
+		static_cast<GLfloat>(HEIGHT));
+	fontShader.use();
+	glUniformMatrix4fv(glGetUniformLocation(fontShader.Program, "projection"), 1, GL_FALSE,
+		glm::value_ptr(fontProjection));
+
+	//FONT
+	Font uiFont;
 
 	GLfloat laserVerts[] = {
 		// positions         // colors
@@ -251,7 +230,6 @@ int main()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
 	glGenerateMipmap(GL_TEXTURE_2D);
 	SOIL_free_image_data(image);
-
 	//set parameters
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -263,7 +241,7 @@ int main()
 	glGenTextures(1, &specMap);
 	glBindTexture(GL_TEXTURE_2D, specMap);
 	image = SOIL_load_image("media/cube_specular.png", &width, &height, 0, SOIL_LOAD_RGB);
-	
+
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
 	glGenerateMipmap(GL_TEXTURE_2D);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -281,18 +259,6 @@ int main()
 	//lamp - same shape as the other cube!
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GL_FLOAT), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
-	glBindVertexArray(0);
-
-
-	//VAO/VBOs for texture quads
-	glGenVertexArrays(1, &fontVAO);
-	glGenBuffers(1, &fontVBO);
-	glBindVertexArray(fontVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, fontVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), 0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
 	//laser
@@ -371,7 +337,7 @@ int main()
 
 		//PICKING
 		glfwSetMouseButtonCallback(window, GLFW_MOUSE_BUTTON_1);
-			
+
 		//clear screen in white, for picking
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -463,9 +429,9 @@ int main()
 				score += 100;
 			}
 		}
-		
+
 		//END PICKING
-		
+
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -476,9 +442,9 @@ int main()
 		if (playerHealth <= 0)
 		{
 			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-			renderText(fontShader, "Game Over!", 30.0f, 300.0f, 1.5f, glm::vec3(1.0f, 0.0f, 0.0f));
-			renderText(fontShader, "Press Esc to Exit", 30.0f, 100.0f, 1.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-			renderText(fontShader, scoreText.str(), 30.0f, 20.0f, 0.7f, glm::vec3(1.0f, 0.0f, 0.0f));
+			uiFont.renderText(fontShader, "Game Over!", 30.0f, 300.0f, 1.5f, glm::vec3(1.0f, 0.0f, 0.0f));
+			uiFont.renderText(fontShader, "Press Esc to Exit", 30.0f, 100.0f, 1.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+			uiFont.renderText(fontShader, scoreText.str(), 30.0f, 20.0f, 0.7f, glm::vec3(1.0f, 0.0f, 0.0f));
 			glfwSwapBuffers(window);
 		}
 		else
@@ -492,9 +458,9 @@ int main()
 			std::ostringstream healthText;
 			healthText << "Health: " << playerHealth;
 
-			renderText(fontShader, healthText.str(), 25.0f, 25.0f, 1.0f, glm::vec3(0.5f, 0.8f, 0.2f));
-			renderText(fontShader, scoreText.str(), 540.0f, 570.0f, 0.7f, glm::vec3(0.3f, 0.7f, 0.9f));
-		
+			uiFont.renderText(fontShader, healthText.str(), 25.0f, 25.0f, 1.0f, glm::vec3(0.5f, 0.8f, 0.2f));
+			uiFont.renderText(fontShader, scoreText.str(), 540.0f, 570.0f, 0.7f, glm::vec3(0.3f, 0.7f, 0.9f));
+
 			//set uniforms and draw objects
 			lightShader.use();
 			GLint matSpecularLoc = glGetUniformLocation(lightShader.Program, "material.specular");
@@ -588,6 +554,7 @@ int main()
 			glfwSwapBuffers(window);
 		}
 	}
+
 	glfwTerminate();
 	logFile.close();
 	return 0;
@@ -626,113 +593,9 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 	camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
-//void do_movement()
-//{
-//	// Camera controls
-//	if (keys[GLFW_KEY_W])
-//		camera.ProcessKeyboard(FORWARD, deltaTime);
-//	if (keys[GLFW_KEY_S])
-//		camera.ProcessKeyboard(BACKWARD, deltaTime);
-//	if (keys[GLFW_KEY_A])
-//		camera.ProcessKeyboard(LEFT, deltaTime);
-//	if (keys[GLFW_KEY_D])
-//		camera.ProcessKeyboard(RIGHT, deltaTime);
-//}
 
 //learnopengl.com code
-void loadFont()
-{
-	//load font
-	FT_Library ft;
-	if (FT_Init_FreeType(&ft))
-		std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
-	FT_Face face;
-	if (FT_New_Face(ft, "fonts/segoeui.ttf", 0, &face))
-		std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
 
-	//define font size
-	FT_Set_Pixel_Sizes(face, 0, 48);
-
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);	//textures can be multiple of 1 byte
-
-	//loop all characters in ASCII set
-	for (GLubyte c = 0; c < 128; c++)
-	{
-		//load character glyph
-		if (FT_Load_Char(face, c, FT_LOAD_RENDER))
-		{
-			std::cout << "ERROR::FREETYPE: Failed to load glyph" << std::endl;
-			continue;
-		}
-		//generate texture
-		GLuint texture;
-		glGenTextures(1, &texture);
-		glBindTexture(GL_TEXTURE_2D, texture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED,
-			face->glyph->bitmap.width,
-			face->glyph->bitmap.rows,
-			0, GL_RED, GL_UNSIGNED_BYTE,
-			face->glyph->bitmap.buffer);
-		//set texture options
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		//store character
-		Character character = {
-			texture,
-			glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
-			glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
-			face->glyph->advance.x
-		};
-		charMap.insert(std::pair<GLchar, Character>(c, character));
-	}
-	FT_Done_Face(face);
-	FT_Done_FreeType(ft);
-}
-
-void renderText(Shader &s, std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 colour)
-{
-	//activate corresponding render state
-	s.use();
-	glUniform3f(glGetUniformLocation(s.Program, "textColour"), colour.x, colour.y, colour.z);
-	glActiveTexture(GL_TEXTURE0);
-	glBindVertexArray(fontVAO);
-
-	//iterate through all characters
-	std::string::const_iterator c;
-	for (c = text.begin(); c != text.end(); c++)
-	{
-		Character ch = charMap[*c];
-
-		GLfloat xpos = x + ch.bearing.x * scale;
-		GLfloat ypos = y - (ch.size.y - ch.bearing.y) * scale;
-
-		GLfloat w = ch.size.x * scale;
-		GLfloat h = ch.size.y * scale;
-		//update VBO for each character
-		GLfloat vertices[6][4] = {
-			{xpos, ypos + h, 0.0, 0.0},
-			{xpos, ypos,	 0.0, 1.0},
-			{xpos + w, ypos, 1.0, 1.0},
-			{xpos, ypos + h, 0.0, 0.0},
-			{xpos + w, ypos, 1.0, 1.0},
-			{xpos + w, ypos + h, 1.0, 0.0}
-		};
-		//Render font texture over quad
-		glBindTexture(GL_TEXTURE_2D, ch.textureID);
-		//update content of VBO memory
-		glBindBuffer(GL_ARRAY_BUFFER, fontVBO);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		//render quad
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-		//now advance cursors for next glyph
-		x += (ch.advance >> 6) * scale; //bitshift by 6 to get value in pixels
-	}
-	glBindVertexArray(0);
-	glBindTexture(GL_TEXTURE_2D, 0);
-}
 
 void calculateMovement(Cube &current, int i)
 {

@@ -1,7 +1,6 @@
 #define GLEW_STATIC
 #ifndef CROSSHAIR_H
 #define CROSSHAIR_H
-#include <glew\glew.h>
 #include "Shader.h"
 
 class Crosshair

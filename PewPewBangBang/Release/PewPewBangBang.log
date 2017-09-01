@@ -1,21 +1,24 @@
-﻿Build started 01/09/2017 17:18:52.
+﻿Build started 01/09/2017 21:00:15.
      1>Project "U:\Documents\3D Android Game\PewPewBangBang\PewPewBangBang\PewPewBangBang.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
-         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /sdl /O2 /Oi /Oy- /GL /D _MBCS /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt Crosshair.cpp Main.cpp
-         Crosshair.cpp
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /sdl /O2 /Oi /Oy- /GL /D _MBCS /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt Cube.cpp Main.cpp Player.cpp
+         Cube.cpp
          Main.cpp
-     1>Main.cpp(381): warning C4244: 'initializing' : conversion from 'double' to 'GLfloat', possible loss of data
-     1>Main.cpp(498): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
-     1>Main.cpp(499): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
-     1>Main.cpp(503): warning C4244: 'initializing' : conversion from 'double' to 'GLfloat', possible loss of data
-     1>Main.cpp(504): warning C4244: 'initializing' : conversion from 'double' to 'GLfloat', possible loss of data
-     1>Main.cpp(506): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
-     1>Main.cpp(507): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>Main.cpp(360): warning C4244: 'initializing' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>Main.cpp(474): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>Main.cpp(475): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>Main.cpp(479): warning C4244: 'initializing' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>Main.cpp(480): warning C4244: 'initializing' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>Main.cpp(482): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>Main.cpp(483): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
+         Player.cpp
        Link:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"U:\Documents\3D Android Game\PewPewBangBang\Release\PewPewBangBang.exe" /NOLOGO glew32s.lib glfw3.lib opengl32.lib SOIL.lib freetype.lib irrklang.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"U:\Documents\3D Android Game\PewPewBangBang\Release\PewPewBangBang.pdb" /OPT:REF /OPT:ICF /LTCG /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"U:\Documents\3D Android Game\PewPewBangBang\Release\PewPewBangBang.lib" /MACHINE:X86 /SAFESEH Release\Crosshair.obj
          Release\Cube.obj
          Release\Font.obj
+         Release\Laser.obj
          Release\Main.obj
+         Release\Player.obj
          Release\Shader.obj
      1>SOIL.lib(SOIL.obj) : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/OPT:ICF' specification
      1>LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs; use /NODEFAULTLIB:library
@@ -40,4 +43,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:05.92
+Time Elapsed 00:00:06.54

@@ -28,7 +28,6 @@ using namespace irrklang;
 // Function prototypes
 void drawHUD();
 void gameOver();
-void calculateMovement(Cube &current, int i);
 void drawLaser();
 void drawCrosshair(Shader &shader, GLuint VAO);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
@@ -49,7 +48,7 @@ const GLuint WIDTH = 800, HEIGHT = 600;
 
 GLfloat lastX = WIDTH / 2.0;
 GLfloat lastY = HEIGHT / 2.0;
-//CREATE CUBES
+
 const glm::vec3 cubeStartPos[] = {
 	glm::vec3(0.0f, 0.0f, -15.0f),
 	glm::vec3(-2.0f, 0.0f, -17.0f),
@@ -57,15 +56,12 @@ const glm::vec3 cubeStartPos[] = {
 };
 
 Cube cubeArray[] = {
-	Cube(cubeStartPos[0], glm::vec3(0.0f, 1.0f, 0.0f)),	//green
-	Cube(cubeStartPos[1], glm::vec3(0.0f, 0.0f, 1.0f)),	//blue
-	Cube(cubeStartPos[2], glm::vec3(1.0f, 0.0f, 0.0f))	//red
+	Cube(cubeStartPos[0], glm::vec3(0.0f, 1.0f, 0.0f), 0),	//green
+	Cube(cubeStartPos[1], glm::vec3(0.0f, 0.0f, 1.0f), 1),	//blue
+	Cube(cubeStartPos[2], glm::vec3(1.0f, 0.0f, 0.0f), 2)	//red
 };
 
 //movement
-int score = 0;
-
-int playerHealth = 100;
 
 ISoundEngine *SoundEngine = createIrrKlangDevice();
 
@@ -167,6 +163,8 @@ int main()
 	glUniformMatrix4fv(glGetUniformLocation(fontShader.Program, "projection"), 1, GL_FALSE,
 		glm::value_ptr(fontProjection));
 
+	//PLAYER
+	Player player;
 	//FONT
 	Font uiFont;
 	//CROSSHAIR
@@ -267,7 +265,7 @@ int main()
 			if (cubeArray[i].alive)	//only do them if they're alive or respawn them
 			{
 				//calculate movement - they should only move and shoot if they're alive!
-				calculateMovement(cubeArray[i], i);
+				cubeArray[i].calculateMovement(player);
 
 				GLint colourLoc = glGetUniformLocation(pickingShader.Program, "objectColor");
 				glUniform3f(colourLoc, cubeArray[i].pickingColour.x, cubeArray[i].pickingColour.y, cubeArray[i].pickingColour.z);
@@ -320,21 +318,21 @@ int main()
 				cubeArray[0].alive = false;
 				cubeArray[0].timeKilled = glfwGetTime();
 				SoundEngine->play2D("media/boing.wav", GL_FALSE);
-				score += 100;
+				player.increaseScore();
 			}
 			else if (pickedID == 0x00ff0000)
 			{
 				cubeArray[1].alive = false;
 				cubeArray[1].timeKilled = glfwGetTime();
 				SoundEngine->play2D("media/boing.wav", GL_FALSE);
-				score += 100;
+				player.increaseScore();
 			}
 			else if (pickedID == 0x000000ff)
 			{
 				cubeArray[2].alive = false;
 				cubeArray[2].timeKilled = glfwGetTime();
 				SoundEngine->play2D("media/boing.wav", GL_FALSE);
-				score += 100;
+				player.increaseScore();
 			}
 		}
 
@@ -344,10 +342,10 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		std::ostringstream scoreText;
-		scoreText << "Score: " << score;
+		scoreText << "Score: " << player.getScore();
 
 		//check if player is dead
-		if (playerHealth <= 0)
+		if (player.getHealth() <= 0)
 		{
 			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 			uiFont.renderText(fontShader, "Game Over!", 30.0f, 300.0f, 1.5f, glm::vec3(1.0f, 0.0f, 0.0f));
@@ -364,7 +362,7 @@ int main()
 			lastFrame = currentFrame;
 
 			std::ostringstream healthText;
-			healthText << "Health: " << playerHealth;
+			healthText << "Health: " << player.getHealth();
 
 			uiFont.renderText(fontShader, healthText.str(), 25.0f, 25.0f, 1.0f, glm::vec3(0.5f, 0.8f, 0.2f));
 			uiFont.renderText(fontShader, scoreText.str(), 540.0f, 570.0f, 0.7f, glm::vec3(0.3f, 0.7f, 0.9f));
@@ -441,7 +439,6 @@ int main()
 
 			crosshair.draw(triangleShader);
 
-
 			if (mouseButton)
 			{
 				laser.draw(triangleShader);
@@ -487,231 +484,3 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 
 	camera.ProcessMouseMovement(xoffset, yoffset);
 }
-
-void calculateMovement(Cube &current, int i)
-{
-	//find cube by ID
-	switch (i)
-	{
-	case 0:
-		switch (current.waypoint)
-		{
-		case 1:
-			//WAYPOINT 1
-			if (current.cubePos.x > -4.0f && current.cubePos.z < -7.0f)
-			{
-				//z needs to be double x
-				current.cubePos.x -= 0.005f;
-				current.cubePos.z += 0.01f;
-			}
-			else
-			{
-				current.waypoint = 2;
-				SoundEngine->play2D("media/jet.wav", GL_FALSE);
-			}
-			break;
-		case 2:
-			//WAYPOINT 2
-			if (current.cubePos.x < -2.0f && current.cubePos.z < 13.0f)
-			{
-				//z is ten times x
-				current.cubePos.x += 0.0025f;
-				current.cubePos.z += 0.025f;
-			}
-			else
-			{
-				//shoot!
-				current.waypoint = 3;
-				playerHealth -= 5;
-				SoundEngine->play2D("media/laser.wav", GL_FALSE);
-			}
-			break;
-		case 3:
-			//waypoint 4
-			if (current.cubePos.x < 2.0f)
-			{
-				//x moves +4
-				current.cubePos.x += 0.005f;
-			}
-			else
-			{
-				current.waypoint = 4;
-			}
-			break;
-		case 4:
-			//waypoint 5
-			if (current.cubePos.x < 6.0f && current.cubePos.z > -3.0f)
-			{
-				//z should be x*4
-				current.cubePos.x += 0.01f;
-				current.cubePos.z -= 0.04f;
-			}
-			else
-			{
-				current.waypoint = 5;
-			}
-			break;
-		case 5:
-			//waypoint 6
-			if (current.cubePos.x > cubeStartPos[i].x && current.cubePos.z > cubeStartPos[i].z)
-			{
-				//z is double x
-				current.cubePos.x -= 0.004f;
-				current.cubePos.z -= 0.008f;
-			}
-			else
-			{
-				current.waypoint = 1;
-				SoundEngine->play2D("media/jet_flyby1.wav", GL_FALSE);
-			}
-			break;
-		default:
-			std::cout << "CUBE ONE MOVEMENT ERROR" << std::endl;
-		};
-		break;
-
-	case 1:
-		switch (current.waypoint)
-		{
-		case 1:
-			//WAYPOINT 1
-			if (current.cubePos.z < -7.0f)
-			{
-				//z is 5 times x
-				current.cubePos.z += 0.01f;
-			}
-			else
-			{
-				current.waypoint = 2;
-			}
-			break;
-		case 2:
-			//WAYPOINT 2
-			//SHOOT!!
-			if (current.cubePos.y < 4.0f && current.cubePos.z < 1.0f)
-			{
-				//y+4 z+8 :: z is double y
-				current.cubePos.y += 0.005f;
-				current.cubePos.z += 0.01f;
-			}
-			else
-			{
-				playerHealth -= 5;
-				SoundEngine->play2D("media/laser.wav", GL_FALSE);
-				current.waypoint = 3;
-			}
-			break;
-		case 3:
-			//waypoint 3
-			if (current.cubePos.y > 0.0f && current.cubePos.z < 13.0f)
-			{
-				//y - 4, z + 12 :: z = y*-4
-				current.cubePos.y -= 0.004f;
-				current.cubePos.z += 0.016f;
-			}
-			else
-			{
-				current.waypoint = 4;
-			}
-			break;
-		case 4:
-			//waypoint 5
-			if (current.cubePos.y > -5.0f && current.cubePos.z > 3.0f)
-			{
-				//y - 5, z - 10 :: z = y*2
-				current.cubePos.y -= 0.01f;
-				current.cubePos.z -= 0.02f;
-			}
-			else
-			{
-				current.waypoint = 5;
-			}
-			break;
-		case 5:
-			//waypoint 6
-			//BACK TO START
-			if (current.cubePos.y < 0.0f && current.cubePos.z > -17.0f)
-			{
-				//x-2, y+5, z-20
-				current.cubePos.y += 0.005f;
-				current.cubePos.z -= 0.02f;
-			}
-			else
-			{
-				current.waypoint = 1;
-				SoundEngine->play2D("media/jet_flyby1.wav", GL_FALSE);
-			}
-			break;
-		default:
-			std::cout << "CUBE 2 MOVEMENT ERROR!" << std::endl;
-		}
-		break;
-	case 2:
-		switch (current.waypoint)
-		{
-		case 1:
-			//WAYPOINT 1
-			if (current.cubePos.z < -8.0f)
-			{
-				current.cubePos.z += 0.01f;
-			}
-			else
-			{
-				current.waypoint = 2;
-			}
-			break;
-		case 2:
-			//WAYPOINT 2
-			if (current.cubePos.x > 1.0f && current.cubePos.z < 19.0f)
-			{
-				//x - 3, z + 27 :: z = x * 9
-				current.cubePos.x -= 0.001f;
-				current.cubePos.z += 0.009f;
-			}
-			else
-			{
-				current.waypoint = 3;
-				//SHOOT
-				playerHealth -= 5;
-				SoundEngine->play2D("media/laser.wav", GL_FALSE);
-			}
-			break;
-		case 3:
-			//waypoint 4
-			if (current.cubePos.x > -5.0f && current.cubePos.z > 3.0f)
-			{
-				//x+4, Z-16 :: z = x * -4
-				current.cubePos.x -= 0.002f;
-				current.cubePos.z -= 0.004f;
-			}
-			else
-			{
-				current.waypoint = 4;
-			}
-			break;
-		case 4:
-			//waypoint 5
-			if (current.cubePos.x < 4.0f && current.cubePos.z > -20.0f)
-			{
-				//x-1, z-23
-				current.cubePos.x += 0.0022f;
-				current.cubePos.z -= 0.0046f;
-			}
-			else
-			{
-				current.waypoint = 1;
-				SoundEngine->play2D("media/jet_flyby1.wav", GL_FALSE);
-			}
-			break;
-		default:
-			std::cout << "CUBE 3 MOVEMENT ERROR!" << std::endl;
-			break;
-		}
-		break;
-	default:
-		std::cout << "INVALID CUBE" << std::endl;
-		break;
-	}
-
-}
-

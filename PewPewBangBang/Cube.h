@@ -7,25 +7,32 @@
 //GLEW
 #define GLEW_STATIC
 #include <glew\glew.h>
+//GLFW
+#include <GLFW\glfw3.h>
 //SOIL
 #include <SOIL.h>
+//IRRKLANG
+#include <irrklang\irrKlang.h>
+#include <iostream>
+//local includes
+#include "Camera.h"
+#include "Player.h"
 
 class Cube
 {
 public:
 	//functions
-	Cube(glm::vec3 startingPos, glm::vec3 colour);
+	Cube();
+	Cube(glm::vec3 startPos, glm::vec3 colour, int id);
+	void calculateMovement(Player& player);
 	//members
-	void draw();
 	int waypoint;
 	glm::vec3 cubePos;
 	glm::vec3 pickingColour;
 	bool alive;
 	double timeKilled;
-	static GLfloat vertices[];
-protected:
-	GLuint VBO;
-	GLuint containerVAO;
+	int id;
+	irrklang::ISoundEngine *SoundEngine = irrklang::createIrrKlangDevice();
 };
 
 #endif

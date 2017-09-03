@@ -17,6 +17,7 @@
 //local includes
 #include "Camera.h"
 #include "Player.h"
+#include "Bullet.h"
 
 class Cube
 {
@@ -24,7 +25,7 @@ public:
 	//functions
 	Cube();
 	Cube(glm::vec3 startPos, glm::vec3 colour, int id);
-	void calculateMovement(Player& player);
+	void calculateMovement(Player& player, Bullet bulletArray[]);
 	//members
 	int waypoint;
 	glm::vec3 cubePos;

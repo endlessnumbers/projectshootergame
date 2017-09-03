@@ -16,6 +16,8 @@
 #include "Font.h"
 #include "Crosshair.h"
 #include "Laser.h"
+#include "Stars.h"
+#include "Vertices.h"
 //C++ STANDARD
 #include <iostream>
 #include <sstream>
@@ -26,10 +28,6 @@
 using namespace irrklang;
 
 // Function prototypes
-void drawHUD();
-void gameOver();
-void drawLaser();
-void drawCrosshair(Shader &shader, GLuint VAO);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 
@@ -37,6 +35,7 @@ GLfloat deltaTime = 0.0f;	//time between current frame and last frame
 GLfloat lastFrame = 0.0f;	//time of last frame
 
 bool keys[1024];
+bool firstClick = false;
 
 //create camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
@@ -44,7 +43,7 @@ Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 //light vector
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
-const GLuint WIDTH = 800, HEIGHT = 600;
+const GLuint WIDTH = 1024, HEIGHT = 800;
 
 GLfloat lastX = WIDTH / 2.0;
 GLfloat lastY = HEIGHT / 2.0;
@@ -61,10 +60,17 @@ Cube cubeArray[] = {
 	Cube(cubeStartPos[2], glm::vec3(1.0f, 0.0f, 0.0f), 2)	//red
 };
 
-//movement
+Bullet bulletArray[] = {
+	Bullet(0, cubeArray[0].cubePos),
+	Bullet(1, cubeArray[1].cubePos),
+	Bullet(2, cubeArray[2].cubePos)
+};
+
+Stars stars;
+
+ArrayContainer arrays;
 
 ISoundEngine *SoundEngine = createIrrKlangDevice();
-
 int main()
 {
 	// Init GLFW
@@ -101,58 +107,19 @@ int main()
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	GLfloat vertices[] = {
-		// Positions           // Normals           // Texture Coords
-		-0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
-		0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f,
-		0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,
-		0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,
-		-0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
-
-		-0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-		0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
-		0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-		0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-		-0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
-		-0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-
-		-0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-		-0.5f, 0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-		-0.5f, -0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-		-0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-
-		0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-		0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
-		0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-		0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-		0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-		0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-
-		-0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f,
-		0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f,
-		0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-		0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-		-0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-		-0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f,
-
-		-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-		0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-		0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
-		0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
-		-0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-		-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f
+	GLfloat starvertices[] = {
+		(0.0f, 0.0f, -21.0f),
 	};
 
 	//setup shaders
 	Shader lightShader("Shaders/light.vs", "Shaders/light.frag");
 	Shader lampShader("Shaders/lamp.vs", "Shaders/lamp.frag");
-	Shader fontShader("Shaders/font.vs", "Shaders/font.frag");
 	Shader pickingShader("Shaders/picking.vs", "Shaders/picking.frag");
+	Shader fontShader("Shaders/font.vs", "Shaders/font.frag");
 	Shader particleShader("Shaders/particle.vs", "Shaders/particle.frag");
 	Shader triangleShader("Shaders/triangle.vs", "Shaders/triangle.frag");
+	Shader bulletShader("Shaders/bullet.vert", "Shaders/bullet.frag");
+	Shader starShader("Shaders/stars.vert", "Shaders/stars.frag");
 
 	camera.MouseSensitivity = 0.05f;
 
@@ -177,7 +144,7 @@ int main()
 	glGenBuffers(1, &VBO);
 	glBindVertexArray(containerVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(arrays.vertices), arrays.vertices, GL_STATIC_DRAW);
 	//position attributes of cube
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
@@ -193,7 +160,7 @@ int main()
 	GLuint specMap;
 	glGenTextures(1, &cubetexture);
 	int width, height;
-	unsigned char* image = SOIL_load_image("media/cube.png", &width, &height, 0, SOIL_LOAD_RGB);
+	unsigned char* image = SOIL_load_image("media/cubetexture.png", &width, &height, 0, SOIL_LOAD_RGB);
 	glBindTexture(GL_TEXTURE_2D, cubetexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
 	glGenerateMipmap(GL_TEXTURE_2D);
@@ -229,12 +196,31 @@ int main()
 	glEnableVertexAttribArray(0);
 	glBindVertexArray(0);
 
+	GLuint bulletVAO;
+	GLuint bulletVBO;
+	glGenVertexArrays(1, &bulletVAO);
+	glGenBuffers(1, &bulletVBO);
+	glBindVertexArray(bulletVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, bulletVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(arrays.bulletVertices), arrays.bulletVertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+	glBindVertexArray(0);
+
+	//STARS
+	GLuint starvao, starvbo;
+	glGenVertexArrays(1, &starvao);
+	glGenBuffers(1, &starvbo);
+	glBindVertexArray(starvao);
+	glBindBuffer(GL_ARRAY_BUFFER, starvbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(starvertices), starvertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+	glBindVertexArray(0);
+
 	lightShader.use();
 	glUniform1i(glGetUniformLocation(lightShader.Program, "material.diffuse"), 0);
 	glUniform1i(glGetUniformLocation(lightShader.Program, "material.specular"), 1);
-
-	lampShader.use();
-	glUniform1i(glGetUniformLocation(lampShader.Program, "ourTexture"), 0);
 
 	SoundEngine->play2D("media/ambientloop.mp3", GL_TRUE);
 
@@ -243,8 +229,36 @@ int main()
 	{
 		glfwPollEvents();
 
-		//PICKING
 		glfwSetMouseButtonCallback(window, GLFW_MOUSE_BUTTON_1);
+		
+
+		//INTRO PAGE
+		while (!firstClick)
+		{
+			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			uiFont.renderText(fontShader, "Welcome", 200.0f, 700.0f, 1.5f, glm::vec3(1.0f, 0.0f, 0.0f));
+			uiFont.renderText(fontShader, "You are a law-abiding citizen who was flying their spaceship", 10.0f, 600.0f, 0.8f, glm::vec3(1.0f, 0.0f, 0.0f));
+			uiFont.renderText(fontShader, "while running some errands one day. Suddenly, you are", 10.0f, 550.0f, 0.8f, glm::vec3(1.0f, 0.0f, 0.0f));
+			uiFont.renderText(fontShader, "attacked by a gang of yobos in high-tech jet-powered cubes,", 10.0f, 500.0f, 0.8f, glm::vec3(1.0f, 0.0f, 0.0f));
+			uiFont.renderText(fontShader, "who want to steal the fancy M&S meals you've just bought.", 10.0f, 450.0f, 0.8f, glm::vec3(1.0f, 0.0f, 0.0f));
+			uiFont.renderText(fontShader, "Make your valiant last stand here. Fight for your fancy mash!", 10.0f, 400.0f, 0.8f, glm::vec3(1.0f, 0.0f, 0.0f));
+			uiFont.renderText(fontShader, "Use the mouse to aim and left mouse to shoot", 10.0f, 300.0f, 0.8f, glm::vec3(1.0f, 0.0f, 0.0f));
+			uiFont.renderText(fontShader, "Click anywhere to begin", 100.0f, 200.0f, 1.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+
+			glfwSwapBuffers(window);
+
+			glfwPollEvents();
+			bool startButton = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
+
+			if (startButton)
+			{
+				firstClick = true;
+				break;
+			}
+		}
+
+		//PICKING
 
 		//clear screen in white, for picking
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -254,7 +268,7 @@ int main()
 		for (int i = 0; i < 3; i++)
 		{
 			//respawn cubes
-			if (!cubeArray[i].alive && (glfwGetTime() - cubeArray[i].timeKilled) >= 3.0)
+			if (!cubeArray[i].alive && (glfwGetTime() - cubeArray[i].timeKilled) >= 2.0)
 			{
 				cubeArray[i].alive = true;
 				//reset position
@@ -265,7 +279,7 @@ int main()
 			if (cubeArray[i].alive)	//only do them if they're alive or respawn them
 			{
 				//calculate movement - they should only move and shoot if they're alive!
-				cubeArray[i].calculateMovement(player);
+				cubeArray[i].calculateMovement(player, bulletArray);
 
 				GLint colourLoc = glGetUniformLocation(pickingShader.Program, "objectColor");
 				glUniform3f(colourLoc, cubeArray[i].pickingColour.x, cubeArray[i].pickingColour.y, cubeArray[i].pickingColour.z);
@@ -298,7 +312,8 @@ int main()
 		glFinish();
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-		int mouseButton = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
+		bool mouseButton = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
+
 		if (mouseButton)
 		{
 			//laser sound
@@ -351,21 +366,18 @@ int main()
 			uiFont.renderText(fontShader, "Game Over!", 30.0f, 300.0f, 1.5f, glm::vec3(1.0f, 0.0f, 0.0f));
 			uiFont.renderText(fontShader, "Press Esc to Exit", 30.0f, 100.0f, 1.0f, glm::vec3(1.0f, 0.0f, 0.0f));
 			uiFont.renderText(fontShader, scoreText.str(), 30.0f, 20.0f, 0.7f, glm::vec3(1.0f, 0.0f, 0.0f));
-			glfwSwapBuffers(window);
 		}
 		else
 		{
-			//do_movement();
-
 			GLfloat currentFrame = glfwGetTime();
 			deltaTime = currentFrame - lastFrame;
 			lastFrame = currentFrame;
 
 			std::ostringstream healthText;
 			healthText << "Health: " << player.getHealth();
-
+			
 			uiFont.renderText(fontShader, healthText.str(), 25.0f, 25.0f, 1.0f, glm::vec3(0.5f, 0.8f, 0.2f));
-			uiFont.renderText(fontShader, scoreText.str(), 540.0f, 570.0f, 0.7f, glm::vec3(0.3f, 0.7f, 0.9f));
+			uiFont.renderText(fontShader, scoreText.str(), 800.0f, 750.0f, 0.7f, glm::vec3(0.3f, 0.7f, 0.9f));
 
 			//set uniforms and draw objects
 			lightShader.use();
@@ -397,10 +409,20 @@ int main()
 			glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 			glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
+			//bullet
+			bulletShader.use();
+			modelLoc = glGetUniformLocation(bulletShader.Program, "model");
+			viewLoc = glGetUniformLocation(bulletShader.Program, "view");
+			projLoc = glGetUniformLocation(bulletShader.Program, "projection");
+			//set matrices
+			glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+			glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
 			for (int i = 0; i < 3; i++)
 			{
 				if (cubeArray[i].alive)
 				{
+					lightShader.use();
 					//draw container
 					glActiveTexture(GL_TEXTURE0);
 					glBindTexture(GL_TEXTURE_2D, cubetexture);
@@ -414,6 +436,22 @@ int main()
 					glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(cubemodel));
 					glDrawArrays(GL_TRIANGLES, 0, 36);
 					glBindVertexArray(0);
+
+					if (bulletArray[i].alive)
+					{
+						bulletArray[i].calculateMovement();
+
+						bulletShader.use();
+						glBindVertexArray(bulletVAO);
+						glm::mat4 bulletmodel;
+						bulletmodel = glm::mat4();
+						bulletmodel = glm::translate(bulletmodel, bulletArray[i].bulletPos);
+						glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(bulletmodel));
+
+						//draw bullet object
+						glDrawArrays(GL_TRIANGLES, 0, 36);
+						glBindVertexArray(0);
+					}
 				}
 			}
 
@@ -439,6 +477,25 @@ int main()
 
 			crosshair.draw(triangleShader);
 
+			for (int i = 0; i < sizeof(arrays.starpos); i++)
+			{
+				//stars
+				starShader.use();
+				modelLoc = glGetUniformLocation(bulletShader.Program, "model");
+				viewLoc = glGetUniformLocation(bulletShader.Program, "view");
+				projLoc = glGetUniformLocation(bulletShader.Program, "projection");
+				glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+				glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+				glm::mat4 starmodel;
+				starmodel = glm::mat4();
+
+				starmodel = glm::translate(starmodel, arrays.starpos[i]);
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(starmodel));
+				glBindVertexArray(starvao);
+				glDrawArrays(GL_POINTS, 0, 1);
+				glBindVertexArray(0);
+			}
+
 			if (mouseButton)
 			{
 				laser.draw(triangleShader);
@@ -447,7 +504,6 @@ int main()
 			glfwSwapBuffers(window);
 		}
 	}
-
 	glfwTerminate();
 	return 0;
 }

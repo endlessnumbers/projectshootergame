@@ -16,7 +16,7 @@ Cube::Cube(glm::vec3 startingPos, glm::vec3 colour, int identity)
 	id = identity;
 }
 
-void Cube::calculateMovement(Player& player)
+void Cube::calculateMovement(Player& player, Bullet bulletArray[])
 {
 	//find cube by ID
 	switch (id)
@@ -29,13 +29,17 @@ void Cube::calculateMovement(Player& player)
 			if (cubePos.x > -4.0f && cubePos.z < -7.0f)
 			{
 				//z needs to be double x
-				cubePos.x -= 0.005f;
-				cubePos.z += 0.01f;
+				cubePos.x -= 0.01f;
+				cubePos.z += 0.02f;
 			}
 			else
 			{
 				waypoint = 2;
-				SoundEngine->play2D("media/jet.wav", GL_FALSE);
+				player.damage();
+				bulletArray[0].alive = true;
+				bulletArray[0].bulletPos = cubePos;
+				SoundEngine->play2D("media/laser.wav", GL_FALSE);
+
 			}
 			break;
 		case 2:
@@ -43,15 +47,14 @@ void Cube::calculateMovement(Player& player)
 			if (cubePos.x < -2.0f && cubePos.z < 13.0f)
 			{
 				//z is ten times x
-				cubePos.x += 0.0025f;
-				cubePos.z += 0.025f;
+				cubePos.x += 0.005f;
+				cubePos.z += 0.05f;
 			}
 			else
 			{
 				//shoot!
 				waypoint = 3;
-				player.damage();
-				SoundEngine->play2D("media/laser.wav", GL_FALSE);
+				SoundEngine->play2D("media/jet.wav", GL_FALSE);
 			}
 			break;
 		case 3:
@@ -59,7 +62,7 @@ void Cube::calculateMovement(Player& player)
 			if (cubePos.x < 2.0f)
 			{
 				//x moves +4
-				cubePos.x += 0.005f;
+				cubePos.x += 0.01f;
 			}
 			else
 			{
@@ -71,8 +74,8 @@ void Cube::calculateMovement(Player& player)
 			if (cubePos.x < 6.0f && cubePos.z > -3.0f)
 			{
 				//z should be x*4
-				cubePos.x += 0.01f;
-				cubePos.z -= 0.04f;
+				cubePos.x += 0.02f;
+				cubePos.z -= 0.08f;
 			}
 			else
 			{
@@ -84,8 +87,8 @@ void Cube::calculateMovement(Player& player)
 			if (cubePos.x > cubeStartPos[id].x && cubePos.z > cubeStartPos[id].z)
 			{
 				//z is double x
-				cubePos.x -= 0.004f;
-				cubePos.z -= 0.008f;
+				cubePos.x -= 0.008f;
+				cubePos.z -= 0.016f;
 			}
 			else
 			{
@@ -106,10 +109,14 @@ void Cube::calculateMovement(Player& player)
 			if (cubePos.z < -7.0f)
 			{
 				//z is 5 times x
-				cubePos.z += 0.01f;
+				cubePos.z += 0.02f;
 			}
 			else
 			{
+				player.damage();
+				bulletArray[1].alive = true;
+				bulletArray[1].bulletPos = cubePos;
+				SoundEngine->play2D("media/laser.wav", GL_FALSE);
 				waypoint = 2;
 			}
 			break;
@@ -119,13 +126,11 @@ void Cube::calculateMovement(Player& player)
 			if (cubePos.y < 4.0f && cubePos.z < 1.0f)
 			{
 				//y+4 z+8 :: z is double y
-				cubePos.y += 0.005f;
-				cubePos.z += 0.01f;
+				cubePos.y += 0.01f;
+				cubePos.z += 0.02f;
 			}
 			else
 			{
-				player.damage();
-				SoundEngine->play2D("media/laser.wav", GL_FALSE);
 				waypoint = 3;
 			}
 			break;
@@ -134,8 +139,8 @@ void Cube::calculateMovement(Player& player)
 			if (cubePos.y > 0.0f && cubePos.z < 13.0f)
 			{
 				//y - 4, z + 12 :: z = y*-4
-				cubePos.y -= 0.004f;
-				cubePos.z += 0.016f;
+				cubePos.y -= 0.008f;
+				cubePos.z += 0.032f;
 			}
 			else
 			{
@@ -147,8 +152,8 @@ void Cube::calculateMovement(Player& player)
 			if (cubePos.y > -5.0f && cubePos.z > 3.0f)
 			{
 				//y - 5, z - 10 :: z = y*2
-				cubePos.y -= 0.01f;
-				cubePos.z -= 0.02f;
+				cubePos.y -= 0.02f;
+				cubePos.z -= 0.04f;
 			}
 			else
 			{
@@ -161,8 +166,8 @@ void Cube::calculateMovement(Player& player)
 			if (cubePos.y < 0.0f && cubePos.z > -17.0f)
 			{
 				//x-2, y+5, z-20
-				cubePos.y += 0.005f;
-				cubePos.z -= 0.02f;
+				cubePos.y += 0.01f;
+				cubePos.z -= 0.04f;
 			}
 			else
 			{
@@ -181,10 +186,14 @@ void Cube::calculateMovement(Player& player)
 			//WAYPOINT 1
 			if (cubePos.z < -8.0f)
 			{
-				cubePos.z += 0.01f;
+				cubePos.z += 0.02f;
 			}
 			else
 			{
+				player.damage();
+				bulletArray[2].alive = true;
+				bulletArray[2].bulletPos = cubePos;
+				SoundEngine->play2D("media/laser.wav", GL_FALSE);
 				waypoint = 2;
 			}
 			break;
@@ -193,15 +202,12 @@ void Cube::calculateMovement(Player& player)
 			if (cubePos.x > 1.0f && cubePos.z < 19.0f)
 			{
 				//x - 3, z + 27 :: z = x * 9
-				cubePos.x -= 0.001f;
-				cubePos.z += 0.009f;
+				cubePos.x -= 0.002f;
+				cubePos.z += 0.018f;
 			}
 			else
 			{
 				waypoint = 3;
-				//SHOOT
-				player.damage();
-				SoundEngine->play2D("media/laser.wav", GL_FALSE);
 			}
 			break;
 		case 3:
@@ -209,8 +215,8 @@ void Cube::calculateMovement(Player& player)
 			if (cubePos.x > -5.0f && cubePos.z > 3.0f)
 			{
 				//x+4, Z-16 :: z = x * -4
-				cubePos.x -= 0.002f;
-				cubePos.z -= 0.004f;
+				cubePos.x -= 0.004f;
+				cubePos.z -= 0.008f;
 			}
 			else
 			{
@@ -222,8 +228,8 @@ void Cube::calculateMovement(Player& player)
 			if (cubePos.x < 4.0f && cubePos.z > -20.0f)
 			{
 				//x-1, z-23
-				cubePos.x += 0.0022f;
-				cubePos.z -= 0.0046f;
+				cubePos.x += 0.0044f;
+				cubePos.z -= 0.0092f;
 			}
 			else
 			{

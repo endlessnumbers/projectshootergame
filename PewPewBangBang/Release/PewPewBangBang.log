@@ -1,8 +1,19 @@
-﻿Build started 03/09/2017 22:30:07.
+﻿Build started 03/09/2017 22:37:44.
      1>Project "U:\Documents\3D Android Game\PewPewBangBang\PewPewBangBang\PewPewBangBang.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
-         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /sdl /O2 /Oi /Oy- /GL /D _MBCS /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt Cube.cpp
-         Cube.cpp
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /sdl /O2 /Oi /Oy- /GL /D _MBCS /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt Main.cpp
+         Main.cpp
+     1>u:\documents\3d android game\pewpewbangbang\pewpewbangbang\Stars.h(19): warning C4200: nonstandard extension used : zero-sized array in struct/union
+                 Cannot generate copy-ctor or copy-assignment operator when UDT contains a zero-sized array
+     1>Main.cpp(252): warning C4800: 'int' : forcing value to bool 'true' or 'false' (performance warning)
+     1>Main.cpp(315): warning C4800: 'int' : forcing value to bool 'true' or 'false' (performance warning)
+     1>Main.cpp(372): warning C4244: 'initializing' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>Main.cpp(530): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>Main.cpp(531): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>Main.cpp(535): warning C4244: 'initializing' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>Main.cpp(536): warning C4244: 'initializing' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>Main.cpp(538): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>Main.cpp(539): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
        Link:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"U:\Documents\3D Android Game\PewPewBangBang\Release\PewPewBangBang.exe" /NOLOGO glew32s.lib glfw3.lib opengl32.lib SOIL.lib freetype.lib irrklang.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"U:\Documents\3D Android Game\PewPewBangBang\Release\PewPewBangBang.pdb" /OPT:REF /OPT:ICF /LTCG /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"U:\Documents\3D Android Game\PewPewBangBang\Release\PewPewBangBang.lib" /MACHINE:X86 /SAFESEH Release\Bullet.obj
          Release\Crosshair.obj
@@ -40,4 +51,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:04.81
+Time Elapsed 00:00:04.63

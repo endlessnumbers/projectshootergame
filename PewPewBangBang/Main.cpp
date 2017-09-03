@@ -112,12 +112,12 @@ int main()
 	};
 
 	//setup shaders
-	Shader lightShader("Shaders/light.vs", "Shaders/light.frag");
-	Shader lampShader("Shaders/lamp.vs", "Shaders/lamp.frag");
-	Shader pickingShader("Shaders/picking.vs", "Shaders/picking.frag");
-	Shader fontShader("Shaders/font.vs", "Shaders/font.frag");
-	Shader particleShader("Shaders/particle.vs", "Shaders/particle.frag");
-	Shader triangleShader("Shaders/triangle.vs", "Shaders/triangle.frag");
+	Shader lightShader("Shaders/light.vert", "Shaders/light.frag");
+	Shader lampShader("Shaders/lamp.vert", "Shaders/lamp.frag");
+	Shader pickingShader("Shaders/picking.vert", "Shaders/picking.frag");
+	Shader fontShader("Shaders/font.vert", "Shaders/font.frag");
+	Shader particleShader("Shaders/particle.vert", "Shaders/particle.frag");
+	Shader triangleShader("Shaders/triangle.vert", "Shaders/triangle.frag");
 	Shader bulletShader("Shaders/bullet.vert", "Shaders/bullet.frag");
 	Shader starShader("Shaders/stars.vert", "Shaders/stars.frag");
 

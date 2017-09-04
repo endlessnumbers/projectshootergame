@@ -29,8 +29,8 @@ void Cube::calculateMovement(Player& player, Bullet bulletArray[])
 			if (cubePos.x > -4.0f && cubePos.z < -7.0f)
 			{
 				//z needs to be double x
-				cubePos.x -= 0.01f;
-				cubePos.z += 0.02f;
+				cubePos.x -= 0.015f;
+				cubePos.z += 0.03f;
 			}
 			else
 			{
@@ -47,8 +47,8 @@ void Cube::calculateMovement(Player& player, Bullet bulletArray[])
 			if (cubePos.x < -2.0f && cubePos.z < 13.0f)
 			{
 				//z is ten times x
-				cubePos.x += 0.005f;
-				cubePos.z += 0.05f;
+				cubePos.x += 0.0075f;
+				cubePos.z += 0.075f;
 			}
 			else
 			{
@@ -62,7 +62,7 @@ void Cube::calculateMovement(Player& player, Bullet bulletArray[])
 			if (cubePos.x < 2.0f)
 			{
 				//x moves +4
-				cubePos.x += 0.01f;
+				cubePos.x += 0.015f;
 			}
 			else
 			{
@@ -74,8 +74,8 @@ void Cube::calculateMovement(Player& player, Bullet bulletArray[])
 			if (cubePos.x < 6.0f && cubePos.z > -3.0f)
 			{
 				//z should be x*4
-				cubePos.x += 0.02f;
-				cubePos.z -= 0.08f;
+				cubePos.x += 0.03f;
+				cubePos.z -= 0.12f;
 			}
 			else
 			{
@@ -87,8 +87,8 @@ void Cube::calculateMovement(Player& player, Bullet bulletArray[])
 			if (cubePos.x > cubeStartPos[id].x && cubePos.z > cubeStartPos[id].z)
 			{
 				//z is double x
-				cubePos.x -= 0.008f;
-				cubePos.z -= 0.016f;
+				cubePos.x -= 0.012f;
+				cubePos.z -= 0.024f;
 			}
 			else
 			{
@@ -109,7 +109,7 @@ void Cube::calculateMovement(Player& player, Bullet bulletArray[])
 			if (cubePos.z < -7.0f)
 			{
 				//z is 5 times x
-				cubePos.z += 0.02f;
+				cubePos.z += 0.03f;
 			}
 			else
 			{
@@ -126,8 +126,8 @@ void Cube::calculateMovement(Player& player, Bullet bulletArray[])
 			if (cubePos.y < 4.0f && cubePos.z < 1.0f)
 			{
 				//y+4 z+8 :: z is double y
-				cubePos.y += 0.01f;
-				cubePos.z += 0.02f;
+				cubePos.y += 0.015f;
+				cubePos.z += 0.03f;
 			}
 			else
 			{
@@ -139,8 +139,8 @@ void Cube::calculateMovement(Player& player, Bullet bulletArray[])
 			if (cubePos.y > 0.0f && cubePos.z < 13.0f)
 			{
 				//y - 4, z + 12 :: z = y*-4
-				cubePos.y -= 0.008f;
-				cubePos.z += 0.032f;
+				cubePos.y -= 0.012f;
+				cubePos.z += 0.048f;
 			}
 			else
 			{
@@ -152,8 +152,8 @@ void Cube::calculateMovement(Player& player, Bullet bulletArray[])
 			if (cubePos.y > -5.0f && cubePos.z > 3.0f)
 			{
 				//y - 5, z - 10 :: z = y*2
-				cubePos.y -= 0.02f;
-				cubePos.z -= 0.04f;
+				cubePos.y -= 0.03f;
+				cubePos.z -= 0.06f;
 			}
 			else
 			{
@@ -166,8 +166,8 @@ void Cube::calculateMovement(Player& player, Bullet bulletArray[])
 			if (cubePos.y < 0.0f && cubePos.z > -17.0f)
 			{
 				//x-2, y+5, z-20
-				cubePos.y += 0.01f;
-				cubePos.z -= 0.04f;
+				cubePos.y += 0.015f;
+				cubePos.z -= 0.06f;
 			}
 			else
 			{
@@ -186,7 +186,7 @@ void Cube::calculateMovement(Player& player, Bullet bulletArray[])
 			//WAYPOINT 1
 			if (cubePos.z < -8.0f)
 			{
-				cubePos.z += 0.02f;
+				cubePos.z += 0.03f;
 			}
 			else
 			{
@@ -202,8 +202,8 @@ void Cube::calculateMovement(Player& player, Bullet bulletArray[])
 			if (cubePos.x > 1.0f && cubePos.z < 19.0f)
 			{
 				//x - 3, z + 27 :: z = x * 9
-				cubePos.x -= 0.002f;
-				cubePos.z += 0.018f;
+				cubePos.x -= 0.003f;
+				cubePos.z += 0.027f;
 			}
 			else
 			{
@@ -215,8 +215,8 @@ void Cube::calculateMovement(Player& player, Bullet bulletArray[])
 			if (cubePos.x > -5.0f && cubePos.z > 3.0f)
 			{
 				//x+4, Z-16 :: z = x * -4
-				cubePos.x -= 0.004f;
-				cubePos.z -= 0.008f;
+				cubePos.x -= 0.03f;
+				cubePos.z -= 0.06f;
 			}
 			else
 			{
@@ -228,8 +228,8 @@ void Cube::calculateMovement(Player& player, Bullet bulletArray[])
 			if (cubePos.x < 4.0f && cubePos.z > -20.0f)
 			{
 				//x-1, z-23
-				cubePos.x += 0.0044f;
-				cubePos.z -= 0.0092f;
+				cubePos.x += 0.033f;
+				cubePos.z -= 0.069f;
 			}
 			else
 			{

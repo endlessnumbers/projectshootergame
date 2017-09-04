@@ -41,7 +41,7 @@ bool firstClick = false;
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
 //light vector
-glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+glm::vec3 lightPos(5.0f, 1.5f, -1.5f);
 
 const GLuint WIDTH = 1024, HEIGHT = 800;
 
@@ -238,7 +238,7 @@ int main()
 			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			uiFont.renderText(fontShader, "Welcome", 200.0f, 700.0f, 1.5f, glm::vec3(1.0f, 0.0f, 0.0f));
-			uiFont.renderText(fontShader, "You are a law-abiding citizen who was flying their spaceship", 10.0f, 600.0f, 0.8f, glm::vec3(1.0f, 0.0f, 0.0f));
+			uiFont.renderText(fontShader, "You are a law-abiding citizen, flying your spaceship", 10.0f, 600.0f, 0.8f, glm::vec3(1.0f, 0.0f, 0.0f));
 			uiFont.renderText(fontShader, "while running some errands one day. Suddenly, you are", 10.0f, 550.0f, 0.8f, glm::vec3(1.0f, 0.0f, 0.0f));
 			uiFont.renderText(fontShader, "attacked by a gang of yobos in high-tech jet-powered cubes,", 10.0f, 500.0f, 0.8f, glm::vec3(1.0f, 0.0f, 0.0f));
 			uiFont.renderText(fontShader, "who want to steal the fancy M&S meals you've just bought.", 10.0f, 450.0f, 0.8f, glm::vec3(1.0f, 0.0f, 0.0f));
@@ -353,7 +353,7 @@ int main()
 
 		//END PICKING
 
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClearColor(0.1f, 0.1f, 0.2f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		std::ostringstream scoreText;
@@ -364,8 +364,11 @@ int main()
 		{
 			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 			uiFont.renderText(fontShader, "Game Over!", 30.0f, 300.0f, 1.5f, glm::vec3(1.0f, 0.0f, 0.0f));
+			uiFont.renderText(fontShader, "The yobos have destroyed your spaceship and are now", 30.0f, 250.0f, 0.8f, glm::vec3(1.0f, 0.0f, 0.0f));
+			uiFont.renderText(fontShader, "devouring your posh cheesecake. The savages!", 30.0f, 200.0f, 0.8f, glm::vec3(1.0f, 0.0f, 0.0f));
 			uiFont.renderText(fontShader, "Press Esc to Exit", 30.0f, 100.0f, 1.0f, glm::vec3(1.0f, 0.0f, 0.0f));
 			uiFont.renderText(fontShader, scoreText.str(), 30.0f, 20.0f, 0.7f, glm::vec3(1.0f, 0.0f, 0.0f));
+			glfwSwapBuffers(window);
 		}
 		else
 		{
@@ -388,11 +391,11 @@ int main()
 			GLint lightSpecularLoc = glGetUniformLocation(lightShader.Program, "light.specular");
 			GLint lightPosLoc = glGetUniformLocation(lightShader.Program, "lightPos");
 			GLint viewPosLoc = glGetUniformLocation(lightShader.Program, "viewPos");
-			glUniform3f(matSpecularLoc, 0.5f, 0.5f, 0.5f);
-			glUniform3f(lightAmbientLoc, 0.4f, 0.4f, 0.4f);
+			glUniform3f(matSpecularLoc, 0.8f, 0.8f, 0.8f);
+			glUniform3f(lightAmbientLoc, 0.2f, 0.2f, 0.2f);
 			glUniform3f(lightDiffuseLoc, 0.7f, 0.7f, 0.7f);
 			glUniform3f(lightSpecularLoc, 1.0f, 1.0f, 1.0f);
-			glUniform1f(matShineLoc, 75.0f);
+			glUniform1f(matShineLoc, 90.0f);
 			glUniform3f(viewPosLoc, camera.Position.x, camera.Position.y, camera.Position.z);
 			glUniform3f(lightPosLoc, lightPos.x, lightPos.y, lightPos.z);
 
